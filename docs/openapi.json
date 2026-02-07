@@ -1,0 +1,5798 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Lumo - CConnect",
+    "version": "1.0.0",
+    "description": "Lumo CConnect REST API: Auth, Users, Posts"
+  },
+  "servers": [
+    {
+      "url": "/api"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentication and OTP"
+    },
+    {
+      "name": "Users",
+      "description": "User profile and relations"
+    },
+    {
+      "name": "Posts",
+      "description": "Posting, likes and comments"
+    },
+    {
+      "name": "Admin",
+      "description": "Super-admin only operations"
+    },
+    {
+      "name": "Media",
+      "description": "Media storage and uploads"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Simple liveness check.",
+        "tags": [
+          "Health"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    }
+                  },
+                  "example": {
+                    "ok": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admins": {
+      "post": {
+        "summary": "Create super admin (legacy)",
+        "description": "Create an admin user (legacy endpoint).",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Created admin"
+          }
+        }
+      }
+    },
+    "/departments/internal": {
+      "get": {
+        "summary": "List internal departments (legacy)",
+        "description": "Legacy internal departments listing.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Departments list"
+          }
+        }
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Get user profile",
+        "description": "Returns public profile payload including counts and pinnedPostIds.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "description": "DELETE /users/{id}",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Profile"
+        ],
+        "summary": "DELETE /users/{id}"
+      }
+    },
+    "/announcements": {
+      "get": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "List announcements (public)",
+        "description": "Returns non-archived announcements for any authenticated user.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/announcements/{id}": {
+      "patch": {
+        "summary": "Update announcement (legacy path)",
+        "description": "Update announcement content/type.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      },
+      "delete": {
+        "description": "DELETE /announcements/{id}",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "DELETE /announcements/{id}"
+      }
+    },
+    "/announcements/{id}/archive": {
+      "post": {
+        "summary": "Archive announcement (legacy path)",
+        "description": "Archive announcement by id.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived"
+          }
+        }
+      }
+    },
+    "/announcements/{id}/restore": {
+      "post": {
+        "summary": "Restore announcement (legacy path)",
+        "description": "Restore archived announcement.",
+        "tags": [
+          "Admin"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored"
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "description": "roleKey takes precedence over accountType (must match if both provided). Students (roleKey=3) require degreeId, yearOfJoining (aka academicYear), and studentId; Staff (roleKey=2) may omit degreeId. departmentId is required for all. gender is optional. fullName also accepts legacy alias name. Note: the field is roleKey, not roleId. Usernames must be 3-30 characters long and may contain letters, numbers, dot, underscore, or hyphen (no spaces).",
+        "parameters": [
+          {
+            "name": "user-agent",
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthRegisterResponse"
+                },
+                "example": {
+                  "id": 42,
+                  "name": "Alice Doe",
+                  "username": "alice.doe",
+                  "email": "alice@example.edu",
+                  "degreeId": 101,
+                  "departmentId": 5,
+                  "designationId": 301,
+                  "empId": "EMP-2024-0001",
+                  "gender": "female",
+                  "yearOfJoining": 2023,
+                  "studentId": "STU-2023-0001"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingFields": {
+                    "value": {
+                      "message": "All fields are required"
+                    }
+                  },
+                  "otpTicketRequired": {
+                    "value": {
+                      "message": "otpTicket is required (10 digits)"
+                    }
+                  },
+                  "ticketInvalid": {
+                    "value": {
+                      "message": "ticket_invalid"
+                    }
+                  },
+                  "ticketExpired": {
+                    "value": {
+                      "message": "ticket_expired"
+                    }
+                  },
+                  "ticketUsed": {
+                    "value": {
+                      "message": "ticket_used"
+                    }
+                  },
+                  "conflict": {
+                    "value": {
+                      "message": "roleKey and accountType conflict"
+                    }
+                  },
+                  "unsupportedRole": {
+                    "value": {
+                      "message": "Unsupported roleKey"
+                    }
+                  },
+                  "degreeRequired": {
+                    "value": {
+                      "message": "degreeId is required"
+                    }
+                  },
+                  "invalidDegree": {
+                    "value": {
+                      "message": "Invalid degreeId"
+                    }
+                  },
+                  "departmentRequired": {
+                    "value": {
+                      "message": "departmentId is required"
+                    }
+                  },
+                  "invalidDepartment": {
+                    "value": {
+                      "message": "Invalid departmentId"
+                    }
+                  },
+                  "roleNotConfigured": {
+                    "value": {
+                      "message": "Role not configured"
+                    }
+                  },
+                  "invalidUsername": {
+                    "value": {
+                      "message": "Username must be 3-30 characters and can include letters, numbers, dot, underscore, or hyphen."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "emailConflict": {
+                    "value": {
+                      "message": "Email already in use"
+                    }
+                  },
+                  "usernameConflict": {
+                    "value": {
+                      "message": "Username already in use"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Registration failed"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthRegisterRequest"
+              },
+              "examples": {
+                "student": {
+                  "summary": "Student registration (roleKey=3)",
+                  "value": {
+                    "fullName": "Alice Doe",
+                    "username": "alice.doe",
+                    "email": "alice@example.edu",
+                    "password": "secret",
+                    "otpTicket": "1234567890",
+                    "roleKey": 3,
+                    "degreeId": 101,
+                    "departmentId": 5,
+                    "gender": "female",
+                    "yearOfJoining": 2023,
+                    "studentId": "STU-2023-0001"
+                  }
+                },
+                "staff": {
+                  "summary": "Staff registration (roleKey=2)",
+                  "value": {
+                    "fullName": "Prof Bob",
+                    "username": "prof_bob",
+                    "email": "bob@example.edu",
+                    "password": "secret",
+                    "otpTicket": "1234567890",
+                    "roleKey": 2,
+                    "departmentId": 2,
+                    "designationId": 301,
+                    "empId": "EMP-2024-0001",
+                    "gender": "male"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Create a new account"
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "description": "Login with email/username and password",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthLoginResponse"
+                },
+                "example": {
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  "user": {
+                    "id": 42,
+                    "name": "Alice Doe",
+                    "username": "alice",
+                    "email": "alice@example.edu",
+                    "degreeId": 101,
+                    "departmentId": 5
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid credentials"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login with email/username and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthLoginRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/request-otp": {
+      "post": {
+        "description": "Request OTP to email",
+        "responses": {
+          "200": {
+            "description": "OTP sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Invalid email"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Domain not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Email domain is not allowed"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Email already registered. Please login."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying",
+                "schema": {
+                  "type": "integer"
+                },
+                "example": 120
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "OTP recently sent. Try again in 120s"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Failed to send email",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Failed to send OTP email"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Request OTP to email",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpRequest"
+              },
+              "example": {
+                "email": "student@example.edu"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/verify-otp": {
+      "post": {
+        "description": "Verify OTP code",
+        "responses": {
+          "200": {
+            "description": "Verified",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OtpVerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "examples": {
+                  "missing": {
+                    "value": {
+                      "error": "email and otp are required"
+                    }
+                  },
+                  "invalid": {
+                    "value": {
+                      "error": "Invalid OTP"
+                    }
+                  },
+                  "expired": {
+                    "value": {
+                      "error": "OTP expired"
+                    }
+                  },
+                  "none": {
+                    "value": {
+                      "error": "No active OTP. Request a new one."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Verify OTP code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OtpVerifyRequest"
+              },
+              "example": {
+                "email": "student@example.edu",
+                "otp": "1234"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/reference-data": {
+      "get": {
+        "description": "Provide roleKey=3 (Student) to receive degrees + departments; roleKey=2 (Staff) to receive designations + departments.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceDataResponse"
+                },
+                "examples": {
+                  "student": {
+                    "summary": "Student reference data",
+                    "value": {
+                      "roleKey": 3,
+                      "degrees": [
+                        {
+                          "degreeId": 101,
+                          "degreeAbbr": "BSc",
+                          "degreeName": "Bachelor of Science",
+                          "level": 1
+                        }
+                      ],
+                      "departments": [
+                        {
+                          "departmentId": 5,
+                          "departmentName": "Computer Science"
+                        }
+                      ]
+                    }
+                  },
+                  "staff": {
+                    "summary": "Staff reference data",
+                    "value": {
+                      "roleKey": 2,
+                      "departments": [
+                        {
+                          "departmentId": 5,
+                          "departmentName": "Computer Science"
+                        }
+                      ],
+                      "designations": [
+                        {
+                          "designationId": 1,
+                          "designationName": "Professor",
+                          "isTeaching": true
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Invalid or missing roleKey (2=Staff, 3=Student)"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimpleError"
+                },
+                "example": {
+                  "error": "Internal server error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "roleKey",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "enum": [
+                2,
+                3
+              ],
+              "example": 3
+            },
+            "description": "2=Staff, 3=Student"
+          }
+        ],
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Fetch reference data by roleKey"
+      }
+    },
+    "/users/me": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Get current user profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Update profile fields",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string"
+                  },
+                  "bio": {
+                    "type": "string"
+                  },
+                  "website": {
+                    "type": "string"
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "bannerUrl": {
+                    "type": "string"
+                  },
+                  "isPrivate": {
+                    "type": "boolean"
+                  },
+                  "isLimited": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "profile": {
+                      "$ref": "#/components/schemas/UserSummary"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No fields provided"
+          }
+        }
+      }
+    },
+    "/users/me/avatar": {
+      "post": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Upload avatar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "avatar": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                },
+                "required": [
+                  "avatar"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Avatar updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarUpdateResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No file uploaded"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Delete avatar",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/delete-request": {
+      "post": {
+        "description": "Verifies the current password, records reason/IP/UA metadata, and issues a deletion requestId plus 4-digit OTP that expires after DELETE_OTP_TTL_MIN minutes.",
+        "responses": {
+          "200": {
+            "description": "OTP issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteRequestResponse"
+                },
+                "examples": {
+                  "production": {
+                    "value": {
+                      "requestId": "01f973c50f4ca310f90b0ca142111c55",
+                      "expiresAt": "2025-10-01T18:14:57.040Z"
+                    },
+                    "description": "Response in production where OTP is emailed only."
+                  },
+                  "nonProduction": {
+                    "value": {
+                      "requestId": "01f973c50f4ca310f90b0ca142111c55",
+                      "expiresAt": "2025-10-01T18:14:57.040Z",
+                      "otp": "7732"
+                    },
+                    "description": "Response when INCLUDE_OTP_IN_RESPONSE=true or NODE_ENV != production."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or no eligible pending request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Password is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Password incorrect",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid password"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User record not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "User not found"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Account already deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Account already deleted"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unable to process request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to request account deletion"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Request account deletion (OTP)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteRequestBody"
+              },
+              "example": {
+                "password": "P@ssw0rd123!",
+                "reason": "Graduated; no longer need access"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/delete-confirm": {
+      "post": {
+        "description": "Consumes the requestId + OTP, archives the user snapshot, scrubs personal data, bumps jwtVersion, and attempts to send a confirmation email (best-effort).",
+        "responses": {
+          "200": {
+            "description": "Account deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteConfirmResponse"
+                },
+                "example": {
+                  "status": "deleted",
+                  "confirmedAt": "2025-10-01T18:00:11.933Z",
+                  "mailerError": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid requestId/otp or no pending request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid requestId or otp"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized or session revoked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Invalid or expired token"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User record not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "User not found"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Request expired or account already deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Account already deleted"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to confirm deletion request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to confirm account deletion"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Confirm account deletion",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteConfirmRequest"
+              },
+              "example": {
+                "requestId": "01f973c50f4ca310f90b0ca142111c55",
+                "otp": "7732"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/follow": {
+      "post": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Follow user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Followed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowActionResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Unfollow user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unfollowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowActionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Create post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/posts/feed": {
+      "get": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Home feed",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{id}/like": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Like a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Unlike a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/posts/{id}/comments": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Add comment",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comment"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "List comments",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Comment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/media/presign": {
+      "post": {
+        "description": "Validates the incoming filename, MIME type, and optional file size before issuing a Cloudflare R2 presigned PUT URL. Attach the returned `objectKey` to post metadata so the backend can manage media lifecycle.",
+        "responses": {
+          "200": {
+            "description": "Upload prepared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MediaPresignResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingFilename": {
+                    "summary": "No filename submitted",
+                    "value": {
+                      "message": "filename is required"
+                    }
+                  },
+                  "missingMime": {
+                    "summary": "No content type",
+                    "value": {
+                      "message": "contentType is required"
+                    }
+                  },
+                  "unsupportedMime": {
+                    "summary": "Disallowed MIME",
+                    "value": {
+                      "message": "Unsupported content type"
+                    }
+                  },
+                  "tooLarge": {
+                    "summary": "Size exceeds limit",
+                    "value": {
+                      "message": "File exceeds 50MB limit"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to prepare upload"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Media"
+        ],
+        "summary": "Generate upload URL",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaPresignRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/admins": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create admin account",
+        "description": "Create an admin (roleKey=1). Only super-admins (roleKey=0) may call this endpoint.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "fullName",
+                  "username",
+                  "email",
+                  "password",
+                  "departmentId"
+                ],
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "username": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 30
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  },
+                  "departmentId": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Admin created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "fullName": {
+                      "type": "string"
+                    },
+                    "username": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "roleKey": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "department": {
+                      "type": "object",
+                      "properties": {
+                        "departmentId": {
+                          "type": "integer"
+                        },
+                        "departmentName": {
+                          "type": "string"
+                        },
+                        "isVisible": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/departments/internal": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List internal departments",
+        "description": "Return active departments marked isVisible=false (internal use). Only super-admins may call this endpoint.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Internal departments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "departments": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "departmentId": {
+                            "type": "integer"
+                          },
+                          "departmentName": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/admin/announcements": {
+      "post": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Create announcement",
+        "description": "Create a new announcement post. Admin or super-admin only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnouncementCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "List announcements",
+        "description": "Paginated list of announcements with optional archived records.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Page number (default 1)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Page size (default 10, max 100)"
+          },
+          {
+            "name": "includeArchived",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Include archived announcements"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Announcements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementListResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/admin/announcements/{id}": {
+      "patch": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Update announcement",
+        "description": "Modify announcement content, type, or scheduling. Admin or super-admin only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Announcement ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnouncementUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnnouncementResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Announcement not found"
+          }
+        }
+      }
+    },
+    "/posts/{id}/archive": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Archive a post",
+        "description": "Marks a post as archived so it no longer appears in feeds. Only the owner or admins may call this endpoint.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostArchiveRequest"
+              },
+              "example": {
+                "reason": "Outdated announcement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Archived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostArchiveResponse"
+                },
+                "example": {
+                  "ok": true,
+                  "post": {
+                    "id": 123,
+                    "isArchived": true,
+                    "archivedAt": "2025-11-02T08:31:42.000Z",
+                    "archivedBy": "user:4",
+                    "archiveReason": "Outdated announcement"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "invalid post id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Already archived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post already archived"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to archive post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{id}/restore": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Restore an archived post",
+        "description": "Clears the archive flag so the post returns to feeds.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostArchiveResponse"
+                },
+                "example": {
+                  "ok": true,
+                  "post": {
+                    "id": 123,
+                    "isArchived": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "invalid post id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Post is not archived",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post is not archived"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to restore post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{id}": {
+      "delete": {
+        "tags": [
+          "Profile",
+          "Posts"
+        ],
+        "summary": "Delete a post permanently",
+        "description": "Removes the post and its related entities permanently.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "invalid post id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "forbidden"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to delete post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/{id}/followers": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "List followers",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Followers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user id"
+          }
+        },
+        "description": "List followers"
+      }
+    },
+    "/users/{id}/following": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "List following",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Following",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user id"
+          }
+        },
+        "description": "List following"
+      }
+    },
+    "/users/{id}/posts": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "List user posts (with pinned)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserPostsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user id"
+          },
+          "403": {
+            "description": "Private or blocked"
+          }
+        }
+      }
+    },
+    "/users/{id}/replies": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "List replies authored by user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user id"
+          },
+          "403": {
+            "description": "Private or blocked"
+          }
+        }
+      }
+    },
+    "/users/{id}/media": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "List user media posts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user id"
+          },
+          "403": {
+            "description": "Private or blocked"
+          }
+        }
+      }
+    },
+    "/users/{id}/likes": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "List posts the user liked",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeedResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user id"
+          },
+          "403": {
+            "description": "Private or blocked"
+          }
+        }
+      }
+    },
+    "/posts/{id}/pin": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Pin a post to profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Unpin a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List notifications",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Mark notification read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationReadResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Mark all notifications read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationReadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/saved": {
+      "get": {
+        "tags": [
+          "Profile"
+        ],
+        "summary": "Saved/bookmarked posts of viewer",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved posts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserFeedResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/posts/{id}/save": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Save (bookmark) a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Unsave a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "example": "Bad request"
+              }
+            }
+          }
+        }
+      },
+      "SimpleError": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "example": "Something went wrong"
+              }
+            }
+          }
+        }
+      },
+      "Ok": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "boolean"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean",
+                "example": true
+              }
+            }
+          }
+        }
+      },
+      "UserSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 42
+          },
+          "fullName": {
+            "type": "string",
+            "example": "Alice Doe"
+          },
+          "username": {
+            "type": "string",
+            "example": "alice"
+          },
+          "bio": {
+            "type": "string",
+            "example": "CS student and maker."
+          },
+          "avatarUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "/uploads/avatars/a-256.webp"
+          },
+          "avatarUrlFull": {
+            "type": "string",
+            "format": "uri",
+            "example": "/uploads/avatars/a-1024.webp"
+          },
+          "bannerUrl": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "example": "/uploads/banners/a.webp"
+          },
+          "website": {
+            "type": "string",
+            "nullable": true,
+            "example": "https://alice.dev"
+          },
+          "location": {
+            "type": "string",
+            "nullable": true,
+            "example": "Chennai"
+          },
+          "joinDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2024-08-15"
+          },
+          "isVerified": {
+            "type": "boolean",
+            "example": true
+          },
+          "isPrivate": {
+            "type": "boolean",
+            "example": false
+          },
+          "isLimited": {
+            "type": "boolean",
+            "example": false
+          },
+          "followersCount": {
+            "type": "integer",
+            "example": 120
+          },
+          "followingCount": {
+            "type": "integer",
+            "example": 180
+          },
+          "postsCount": {
+            "type": "integer",
+            "example": 56
+          },
+          "likesCount": {
+            "type": "integer",
+            "example": 240
+          },
+          "bookmarksCount": {
+            "type": "integer",
+            "example": 35
+          },
+          "pinnedPostIds": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              501,
+              499
+            ]
+          },
+          "viewerFollowing": {
+            "type": "boolean",
+            "example": true
+          },
+          "viewerFollowsBack": {
+            "type": "boolean",
+            "example": false
+          },
+          "viewerMuted": {
+            "type": "boolean",
+            "example": false
+          },
+          "viewerBlocked": {
+            "type": "boolean",
+            "example": false
+          },
+          "avatarInitial": {
+            "type": "string",
+            "example": "A"
+          }
+        },
+        "required": [
+          "id",
+          "username"
+        ]
+      },
+      "AuthRegisterRequest": {
+        "type": "object",
+        "description": "Payload for /auth/register. Usernames are trimmed and validated before duplicate checks.",
+        "required": [
+          "fullName",
+          "username",
+          "email",
+          "password",
+          "otpTicket"
+        ],
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "description": "Display name shown in UI."
+          },
+          "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 30,
+            "pattern": "^[A-Za-z0-9._-]+$",
+            "description": "Case-sensitive handle. Trimmed before persistence. Allowed characters: letters, numbers, dot, underscore, hyphen.",
+            "example": "alice.doe"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Trimmed and lowercased during registration."
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "Minimum 8 characters recommended."
+          },
+          "otpTicket": {
+            "type": "string",
+            "pattern": "^[0-9]{10}$",
+            "description": "10-digit ticket from /auth/verify-otp."
+          },
+          "roleKey": {
+            "type": "integer",
+            "enum": [
+              2,
+              3
+            ],
+            "description": "2 = Staff, 3 = Student. Must align with accountType if present."
+          },
+          "accountType": {
+            "type": "string",
+            "nullable": true,
+            "description": "Legacy string alias for roleKey."
+          },
+          "degreeId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "designationId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "empId": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true,
+            "description": "male | female | other | prefer_not_to_say"
+          },
+          "yearOfJoining": {
+            "type": "integer",
+            "nullable": true
+          },
+          "academicYear": {
+            "type": "integer",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "OtpRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "email"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "email"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Email to receive the OTP. Normalized to lowercase."
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string",
+                "example": "student@example.edu"
+              }
+            }
+          }
+        }
+      },
+      "OtpRequestResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Status message suitable for UI display."
+                  }
+                }
+              },
+              "email": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "email"
+                  }
+                }
+              },
+              "domain": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Brand/organization domain inferred from email."
+                  }
+                }
+              },
+              "expiresInSeconds": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Seconds until the OTP expires."
+                  }
+                }
+              },
+              "otp": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "4-digit OTP echoed in non-production environments or when explicitly enabled."
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "example": "OTP sent to email"
+              },
+              "email": {
+                "type": "string",
+                "example": "student@example.edu"
+              },
+              "domain": {
+                "type": "string",
+                "example": "example.edu"
+              },
+              "expiresInSeconds": {
+                "type": "number",
+                "example": 900
+              },
+              "otp": {
+                "type": "string",
+                "example": "1234"
+              }
+            }
+          }
+        }
+      },
+      "OtpVerifyRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "email",
+              "otp"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "email"
+                  }
+                }
+              },
+              "otp": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "4-digit code from email."
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string",
+                "example": "student@example.edu"
+              },
+              "otp": {
+                "type": "string",
+                "example": "1234"
+              }
+            }
+          }
+        }
+      },
+      "OtpVerifyResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "email": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "email"
+                  }
+                }
+              },
+              "roles": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "properties": {
+                          "roleKey": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "integer"
+                              }
+                            }
+                          },
+                          "roleName": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "description": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "otpTicket": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "10-digit ticket required for registration."
+                  }
+                }
+              },
+              "expiresInSeconds": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string",
+                "example": "OTP verified"
+              },
+              "email": {
+                "type": "string",
+                "example": "student@example.edu"
+              },
+              "roles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "roleKey": {
+                      "type": "number",
+                      "example": 3
+                    },
+                    "roleName": {
+                      "type": "string",
+                      "example": "Student"
+                    }
+                  }
+                }
+              },
+              "otpTicket": {
+                "type": "string",
+                "example": "0123456789"
+              },
+              "expiresInSeconds": {
+                "type": "number",
+                "example": 1800
+              }
+            }
+          }
+        }
+      },
+      "ReferenceDataResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "description": {
+            "type": "string",
+            "example": "Role-specific lookup data surfaced after OTP verification."
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "roleKey": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "degrees": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "properties": {
+                          "degreeId": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "integer"
+                              }
+                            }
+                          },
+                          "degreeAbbr": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "degreeName": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "level": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "departments": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "properties": {
+                          "departmentId": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "integer"
+                              }
+                            }
+                          },
+                          "departmentName": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "designations": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      },
+                      "properties": {
+                        "type": "object",
+                        "properties": {
+                          "designationId": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "integer"
+                              }
+                            }
+                          },
+                          "designationName": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "isTeaching": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AuthRegisterResponse": {
+        "type": "object",
+        "description": "Response issued after successful registration.",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "degreeId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "departmentId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "designationId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "empId": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "yearOfJoining": {
+            "type": "integer",
+            "nullable": true
+          },
+          "studentId": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "example": {
+          "id": 42,
+          "name": "Alice Doe",
+          "username": "alice.doe",
+          "email": "alice@example.edu",
+          "degreeId": 101,
+          "departmentId": 5,
+          "designationId": 301,
+          "empId": "EMP-2024-0001",
+          "gender": "female",
+          "yearOfJoining": 2023,
+          "studentId": "STU-2023-0001"
+        }
+      },
+      "AvatarUpdateResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "boolean"
+                  }
+                }
+              },
+              "avatarUrl": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "avatarUrlFull": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean",
+                "example": true
+              },
+              "avatarUrl": {
+                "type": "string",
+                "example": "/uploads/avatars/abc-256.webp"
+              },
+              "avatarUrlFull": {
+                "type": "string",
+                "example": "/uploads/avatars/abc-1024.webp"
+              }
+            }
+          }
+        }
+      },
+      "PostCreate": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Trimmed text, max 2000 characters. Duplicate consecutive posts rejected."
+          },
+          "attachments": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Attach up to 5 images. If a GIF or video is included, it must be the only attachment. Include the `metadata.r2Key` issued by `/media/presign` so the backend can clean up objects.",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "url"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "gif",
+                    "video"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "metadata": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "Additional media information sent back by the storage presign endpoint.",
+                  "properties": {
+                    "r2Key": {
+                      "type": "string",
+                      "description": "Required: Cloudflare R2 object key for this file."
+                    },
+                    "contentType": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "size": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "width": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "height": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "duration": {
+                      "type": "number",
+                      "nullable": true,
+                      "description": "Duration in seconds for video/GIF uploads."
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "quotedPostId": {
+            "type": "integer",
+            "nullable": true,
+            "description": "ID of an existing post to share. When provided, the request is treated as a quote/repost; omit `content` and attachments for silent shares or include them for quote posts."
+          },
+          "parentPostId": {
+            "type": "integer",
+            "nullable": true,
+            "description": "ID of the post this entry replies to when building threaded conversations. Not used for lightweight comments."
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "content": "Excited for the #Hackathon with @superadmin!",
+          "attachments": [
+            {
+              "type": "image",
+              "url": "https://cdn.example.edu/media/posts/hackathon-poster.webp",
+              "metadata": {
+                "r2Key": "users/4/posts/hackathon-poster.webp",
+                "contentType": "image/webp",
+                "size": 104857,
+                "width": 1024,
+                "height": 576
+              }
+            },
+            {
+              "type": "image",
+              "url": "https://cdn.example.edu/media/posts/hackathon-team.jpg",
+              "metadata": {
+                "r2Key": "users/4/posts/hackathon-team.jpg",
+                "contentType": "image/jpeg"
+              }
+            }
+          ],
+          "quotedPostId": 42,
+          "parentPostId": 41
+        }
+      },
+      "Post": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "postType": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "announcement"
+            ]
+          },
+          "pinnedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "audienceScope": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "mentions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lowercase usernames referenced with @"
+          },
+          "hashtags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lowercase hashtag slugs (no # symbol)"
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Normalized https URLs detected in content"
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostMedia"
+            }
+          },
+          "quotedPostId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "quotedPost": {
+            "$ref": "#/components/schemas/PostSummary",
+            "nullable": true
+          },
+          "parentPostId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "parentPost": {
+            "$ref": "#/components/schemas/PostSummary",
+            "nullable": true
+          },
+          "isArchived": {
+            "type": "boolean"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "archivedBy": {
+            "type": "string",
+            "nullable": true
+          },
+          "archiveReason": {
+            "type": "string",
+            "nullable": true
+          },
+          "announcementTypeId": {
+            "type": "integer",
+            "nullable": true
+          },
+          "announcementType": {
+            "$ref": "#/components/schemas/AnnouncementTypeSummary",
+            "nullable": true
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "user": {
+            "$ref": "#/components/schemas/PostAuthor",
+            "nullable": true
+          },
+          "likeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Running total of likes (materialized from post_stats)."
+          },
+          "commentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Running total of comments (materialized)."
+          },
+          "quoteCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Running total of quotes/reposts (future-ready)."
+          },
+          "viewCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Aggregated impressions (populated asynchronously)."
+          },
+          "viewerHasLiked": {
+            "type": "boolean",
+            "description": "Whether the requesting user currently likes the post."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "content",
+          "postType",
+          "audienceScope",
+          "isArchived",
+          "userId",
+          "likeCount",
+          "commentCount",
+          "quoteCount",
+          "viewCount",
+          "viewerHasLiked",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CommentCreate": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "content"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string",
+                "example": "Nice post!"
+              }
+            }
+          }
+        }
+      },
+      "Comment": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "postId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "userId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "content": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              },
+              "updatedAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  }
+                }
+              },
+              "commentCount": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "minimum": {
+                    "type": "number",
+                    "example": 0
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Updated total number of comments on the post."
+                  }
+                }
+              }
+            }
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "id",
+              "postId",
+              "userId",
+              "content",
+              "createdAt",
+              "updatedAt"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number",
+                "example": 871
+              },
+              "postId": {
+                "type": "number",
+                "example": 123
+              },
+              "userId": {
+                "type": "number",
+                "example": 4
+              },
+              "content": {
+                "type": "string",
+                "example": "Team Phoenix has 3 open slots — DM me if you want in!"
+              },
+              "createdAt": {
+                "type": "string",
+                "example": "2025-10-06T17:05:00.000Z"
+              },
+              "updatedAt": {
+                "type": "string",
+                "example": "2025-10-06T17:05:00.000Z"
+              },
+              "commentCount": {
+                "type": "number",
+                "example": 9
+              }
+            }
+          }
+        }
+      },
+      "DeleteRequestBody": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "password"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "password": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "password"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Current password for the logged-in account."
+                  }
+                }
+              },
+              "reason": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "maxLength": {
+                    "type": "number",
+                    "example": 2000
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Optional context shared with admins when reviewing deletions."
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "password": {
+                "type": "string",
+                "example": "currentPassword123"
+              },
+              "reason": {
+                "type": "string",
+                "example": "Graduated; no longer need campus access"
+              }
+            }
+          }
+        }
+      },
+      "DeleteRequestResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Opaque deletion request identifier returned by /users/me/delete-request."
+                  }
+                }
+              },
+              "expiresAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "ISO timestamp when the OTP/request expires."
+                  }
+                }
+              },
+              "otp": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "4-digit OTP. Present only when INCLUDE_OTP_IN_RESPONSE=true or NODE_ENV !== \"production\"."
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "example": "b027e09885bb0885ddd3759b06445ca9"
+              },
+              "expiresAt": {
+                "type": "string",
+                "example": "2025-10-01T15:43:09.931Z"
+              },
+              "otp": {
+                "type": "string",
+                "example": "8157"
+              }
+            }
+          }
+        }
+      },
+      "DeleteConfirmRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "required": {
+            "type": "array",
+            "example": [
+              "requestId",
+              "otp"
+            ],
+            "items": {
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "minLength": {
+                    "type": "number",
+                    "example": 1
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Token returned by delete-request."
+                  }
+                }
+              },
+              "otp": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "pattern": {
+                    "type": "string",
+                    "example": "^[0-9]{4}$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "4-digit confirmation code from the email/response."
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "requestId": {
+                "type": "string",
+                "example": "b027e09885bb0885ddd3759b06445ca9"
+              },
+              "otp": {
+                "type": "string",
+                "example": "8157"
+              }
+            }
+          }
+        }
+      },
+      "DeleteConfirmResponse": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "example": "object"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "enum": {
+                    "type": "array",
+                    "example": [
+                      "deleted"
+                    ],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Always \"deleted\" when the confirmation succeeds."
+                  }
+                }
+              },
+              "confirmedAt": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "date-time"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Timestamp when the account was scrubbed and archived."
+                  }
+                }
+              },
+              "mailerError": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "boolean"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "true when the confirmation email failed to send; account deletion already committed."
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "example": "deleted"
+              },
+              "confirmedAt": {
+                "type": "string",
+                "example": "2025-10-01T18:00:11.933Z"
+              },
+              "mailerError": {
+                "type": "boolean",
+                "example": false
+              }
+            }
+          }
+        }
+      },
+      "AuthLoginRequest": {
+        "type": "object",
+        "description": "Credentials for /auth/login. emailOrUsername is trimmed before lookup.",
+        "required": [
+          "emailOrUsername",
+          "password"
+        ],
+        "properties": {
+          "emailOrUsername": {
+            "type": "string",
+            "description": "Email (case-insensitive) or username (case-sensitive).",
+            "example": "alice@example.edu"
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "Plain password sent over HTTPS.",
+            "example": "P@ssw0rd123!"
+          }
+        }
+      },
+      "AuthLoginResponse": {
+        "type": "object",
+        "description": "JWT plus lightweight user profile returned after successful login.",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "JWT signed with server secret."
+          },
+          "user": {
+            "type": "object",
+            "$ref": "#/components/schemas/UserSummary"
+          }
+        },
+        "example": {
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "user": {
+            "id": 42,
+            "name": "Alice Doe",
+            "username": "alice",
+            "email": "alice@example.edu",
+            "degreeId": 101,
+            "departmentId": 5,
+            "designationId": null
+          }
+        }
+      },
+      "PostMediaMetadata": {
+        "type": "object",
+        "description": "Metadata persisted with each attachment. Additional custom keys may be stored alongside these defaults.",
+        "properties": {
+          "r2Key": {
+            "type": "string",
+            "description": "Cloudflare R2 object key returned by POST /media/presign."
+          },
+          "contentType": {
+            "type": "string",
+            "nullable": true,
+            "description": "MIME type supplied during upload (e.g. image/webp)."
+          },
+          "size": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Object size in bytes."
+          },
+          "width": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Pixel width when known."
+          },
+          "height": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Pixel height when known."
+          },
+          "duration": {
+            "type": "number",
+            "format": "float",
+            "nullable": true,
+            "description": "Duration in seconds for video or GIF attachments."
+          },
+          "order": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Insertion order maintained by the server."
+          }
+        },
+        "additionalProperties": true,
+        "example": {
+          "r2Key": "users/4/posts/714b3d51-9e1f-4aa2-9f9e-4c2f034b0d0d.webp",
+          "contentType": "image/webp",
+          "size": 105432,
+          "width": 1280,
+          "height": 720,
+          "order": 0
+        }
+      },
+      "PostMedia": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "gif",
+              "video"
+            ]
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/PostMediaMetadata"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "url"
+        ],
+        "example": {
+          "id": 1,
+          "type": "image",
+          "url": "https://cdn.example.edu/media/users/4/posts/714b3d51.webp",
+          "metadata": {
+            "r2Key": "users/4/posts/714b3d51-9e1f-4aa2-9f9e-4c2f034b0d0d.webp",
+            "contentType": "image/webp",
+            "size": 105432,
+            "width": 1280,
+            "height": 720,
+            "order": 0
+          }
+        }
+      },
+      "PostSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "content": {
+            "type": "string"
+          },
+          "postType": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "fullName": {
+                "type": "string"
+              },
+              "username": {
+                "type": "string"
+              }
+            }
+          },
+          "likeCount": {
+            "type": "integer"
+          },
+          "commentCount": {
+            "type": "integer"
+          },
+          "quoteCount": {
+            "type": "integer"
+          },
+          "viewCount": {
+            "type": "integer"
+          },
+          "viewerHasLiked": {
+            "type": "boolean"
+          },
+          "viewerHasSaved": {
+            "type": "boolean"
+          },
+          "media": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "isPinned": {
+            "type": "boolean"
+          },
+          "pinnedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "example": {
+          "id": 501,
+          "content": "Excited to launch the new profile page!",
+          "postType": "standard",
+          "createdAt": "2026-01-30T10:15:00.000Z",
+          "updatedAt": "2026-01-30T10:15:00.000Z",
+          "user": {
+            "id": 42,
+            "fullName": "Alice Doe",
+            "username": "alice"
+          },
+          "likeCount": 24,
+          "commentCount": 3,
+          "quoteCount": 1,
+          "viewCount": 210,
+          "viewerHasLiked": true,
+          "viewerHasSaved": false,
+          "media": [],
+          "isPinned": true,
+          "pinnedAt": "2026-01-31T09:00:00.000Z"
+        }
+      },
+      "PostFeedResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "count",
+          "posts"
+        ],
+        "example": {
+          "page": 1,
+          "limit": 10,
+          "count": 2,
+          "posts": [
+            {
+              "id": 123,
+              "content": "Excited for the #Hackathon with @superadmin!",
+              "postType": "standard",
+              "audienceScope": {
+                "target": {
+                  "scope": "profile"
+                },
+                "interests": [
+                  "topic:events"
+                ]
+              },
+              "mentions": [
+                "superadmin"
+              ],
+              "hashtags": [
+                "hackathon"
+              ],
+              "urls": [
+                "https://example.edu/events/hack"
+              ],
+              "media": [
+                {
+                  "id": 1,
+                  "type": "image",
+                  "url": "https://cdn.example.edu/media/posts/hackathon-poster.webp",
+                  "metadata": {
+                    "r2Key": "users/4/posts/hackathon-poster.webp",
+                    "contentType": "image/webp",
+                    "size": 104857,
+                    "width": 1024,
+                    "height": 576,
+                    "order": 0
+                  }
+                }
+              ],
+              "quotedPostId": null,
+              "parentPostId": null,
+              "isArchived": false,
+              "announcementTypeId": null,
+              "userId": 4,
+              "user": {
+                "id": 4,
+                "fullName": "Ava Admin",
+                "username": "ava.admin"
+              },
+              "likeCount": 42,
+              "commentCount": 3,
+              "quoteCount": 0,
+              "viewCount": 256,
+              "viewerHasLiked": false,
+              "createdAt": "2025-10-06T17:00:00.000Z",
+              "updatedAt": "2025-10-06T17:00:00.000Z"
+            }
+          ]
+        }
+      },
+      "PostEngagementResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "likeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "viewerHasLiked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "likeCount",
+          "viewerHasLiked"
+        ],
+        "example": {
+          "ok": true,
+          "likeCount": 7,
+          "viewerHasLiked": true
+        }
+      },
+      "MediaPresignRequest": {
+        "type": "object",
+        "required": [
+          "filename",
+          "contentType"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Original file name supplied by the client."
+          },
+          "contentType": {
+            "type": "string",
+            "description": "MIME type detected prior to upload (image/* or video/*)."
+          },
+          "size": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Optional file size in bytes for pre-flight validation."
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "filename": "hackathon-poster.webp",
+          "contentType": "image/webp",
+          "size": 105432
+        }
+      },
+      "MediaPresignResponse": {
+        "type": "object",
+        "properties": {
+          "uploadUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Pre-signed Cloudflare R2 PUT URL."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "Number of seconds before the upload URL expires."
+          },
+          "objectKey": {
+            "type": "string",
+            "description": "R2 object key to store in attachment metadata."
+          },
+          "publicUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public CDN URL for the uploaded asset."
+          },
+          "requiredHeaders": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Headers that must be included when uploading."
+          },
+          "maxUploadBytes": {
+            "type": "integer",
+            "description": "Maximum allowed upload size in bytes."
+          }
+        },
+        "required": [
+          "uploadUrl",
+          "expiresIn",
+          "objectKey",
+          "publicUrl",
+          "requiredHeaders",
+          "maxUploadBytes"
+        ],
+        "example": {
+          "uploadUrl": "https://example-r2.cloudflare.com/put-url",
+          "expiresIn": 900,
+          "objectKey": "users/4/images/714b3d51.webp",
+          "publicUrl": "https://cdn.example.edu/media/users/4/images/714b3d51.webp",
+          "requiredHeaders": {
+            "Content-Type": "image/webp"
+          },
+          "maxUploadBytes": 52428800
+        }
+      },
+      "PostArchiveRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Optional reason shown in audit logs"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PostArchiveResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "post": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "isArchived": {
+                "type": "boolean"
+              },
+              "archivedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "archivedBy": {
+                "type": "string",
+                "nullable": true
+              },
+              "archiveReason": {
+                "type": "string",
+                "nullable": true
+              }
+            },
+            "required": [
+              "id",
+              "isArchived"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "post"
+        ]
+      },
+      "PostAuthor": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "fullName": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "fullName",
+          "username"
+        ]
+      },
+      "AnnouncementTypeSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "typeKey": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "typeKey",
+          "displayName"
+        ]
+      },
+      "AnnouncementCreateRequest": {
+        "type": "object",
+        "required": [
+          "content",
+          "announcementTypeId"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280,
+            "description": "Trimmed text, max 280 characters."
+          },
+          "attachments": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Attach up to 5 images. A GIF or video must be the sole attachment. Include the `metadata.r2Key` from `/media/presign` for storage cleanup.",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "url"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "gif",
+                    "video"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "metadata": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "Additional media information persisted alongside the announcement.",
+                  "properties": {
+                    "r2Key": {
+                      "type": "string",
+                      "description": "Cloudflare R2 object key returned during presign."
+                    },
+                    "contentType": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "size": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "width": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "height": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "duration": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "announcementTypeId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pinnedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnnouncementUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 280,
+            "description": "Trimmed text, max 280 characters."
+          },
+          "attachments": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Attach up to 5 images. A GIF or video must be the sole attachment. Include the `metadata.r2Key` from `/media/presign` for storage cleanup.",
+            "items": {
+              "type": "object",
+              "required": [
+                "type",
+                "url"
+              ],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "image",
+                    "gif",
+                    "video"
+                  ]
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "metadata": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "Additional media information persisted alongside the announcement.",
+                  "properties": {
+                    "r2Key": {
+                      "type": "string",
+                      "description": "Cloudflare R2 object key returned during presign."
+                    },
+                    "contentType": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "size": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "width": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "height": {
+                      "type": "integer",
+                      "nullable": true
+                    },
+                    "duration": {
+                      "type": "number",
+                      "nullable": true
+                    }
+                  },
+                  "additionalProperties": true
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "announcementTypeId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pinnedUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "AnnouncementResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "announcement": {
+            "$ref": "#/components/schemas/Post"
+          }
+        },
+        "required": [
+          "ok",
+          "announcement"
+        ]
+      },
+      "AnnouncementListResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "announcements": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "total",
+          "announcements"
+        ]
+      },
+      "FollowActionResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "alreadyFollowing": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "removed": {
+            "type": "boolean",
+            "nullable": true
+          }
+        },
+        "example": {
+          "ok": true,
+          "alreadyFollowing": false,
+          "removed": false
+        }
+      },
+      "FollowListResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "users": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "fullName": {
+                  "type": "string"
+                },
+                "username": {
+                  "type": "string"
+                },
+                "avatarUrl": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "count",
+          "total",
+          "hasMore",
+          "users"
+        ]
+      },
+      "NotificationItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "userId": {
+            "type": "integer"
+          },
+          "actorId": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "follow",
+              "like",
+              "comment",
+              "quote",
+              "mention"
+            ]
+          },
+          "entityType": {
+            "type": "string",
+            "enum": [
+              "user",
+              "post",
+              "comment"
+            ]
+          },
+          "entityId": {
+            "type": "integer"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "unread",
+              "read"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "readAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "actorId",
+          "type",
+          "entityType",
+          "entityId",
+          "status",
+          "createdAt"
+        ]
+      },
+      "SimpleOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "ok": true
+        }
+      },
+      "UserFeedResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "prevPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "nextPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PostSummary"
+            }
+          }
+        },
+        "example": {
+          "page": 1,
+          "prevPage": null,
+          "nextPage": 2,
+          "limit": 10,
+          "total": 42,
+          "count": 10,
+          "hasMore": true,
+          "posts": [
+            {
+              "id": 510,
+              "content": "Replying to @bob about the launch",
+              "postType": "standard",
+              "createdAt": "2026-01-31T08:00:00.000Z",
+              "updatedAt": "2026-01-31T08:00:00.000Z",
+              "user": {
+                "id": 42,
+                "fullName": "Alice Doe",
+                "username": "alice"
+              },
+              "likeCount": 5,
+              "commentCount": 0,
+              "quoteCount": 0,
+              "viewCount": 60,
+              "viewerHasLiked": false,
+              "viewerHasSaved": false,
+              "media": [],
+              "isPinned": false,
+              "pinnedAt": null
+            }
+          ]
+        }
+      },
+      "UserPostsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserFeedResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pinned": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PostSummary"
+                }
+              }
+            }
+          }
+        ],
+        "example": {
+          "page": 1,
+          "prevPage": null,
+          "nextPage": 2,
+          "limit": 10,
+          "total": 12,
+          "count": 9,
+          "hasMore": true,
+          "pinned": [
+            {
+              "id": 501,
+              "content": "Excited to launch the new profile page!",
+              "postType": "standard",
+              "createdAt": "2026-01-30T10:15:00.000Z",
+              "updatedAt": "2026-01-30T10:15:00.000Z",
+              "user": {
+                "id": 42,
+                "fullName": "Alice Doe",
+                "username": "alice"
+              },
+              "likeCount": 24,
+              "commentCount": 3,
+              "quoteCount": 1,
+              "viewCount": 210,
+              "viewerHasLiked": true,
+              "viewerHasSaved": false,
+              "media": [],
+              "isPinned": true,
+              "pinnedAt": "2026-01-31T09:00:00.000Z"
+            }
+          ],
+          "posts": []
+        }
+      },
+      "NotificationListResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "nextPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "notifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationItem"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "count",
+          "total",
+          "hasMore",
+          "notifications"
+        ]
+      },
+      "NotificationReadResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "notification": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unread",
+                  "read"
+                ]
+              },
+              "readAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          }
+        },
+        "example": {
+          "ok": true,
+          "notification": {
+            "id": 9,
+            "status": "read",
+            "readAt": "2026-01-02T00:00:00.000Z"
+          }
+        }
+      }
+    }
+  },
+  "externalDocs": {
+    "description": "Swagger UI (live docs)",
+    "url": "/api/docs"
+  }
+}

@@ -1,0 +1,34 @@
+config:
+  target: "{{ $env.TARGET || 'http://localhost:4000/api' }}"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: warm-up
+    - duration: 60
+      arrivalRate: 15
+      rampTo: 30
+      name: ramp
+    - duration: 60
+      arrivalRate: 30
+      name: sustain
+  defaults:
+    headers:
+      Authorization: "Bearer {{ $env.AUTH_TOKEN || '' }}"
+      Content-Type: "application/json"
+  ensure:
+    maxErrorRate: 1
+
+scenarios:
+  - name: fetch-feed
+    weight: 3
+    flow:
+      - get:
+          url: "/posts/feed?page={{ $randomNumber(1, 4) }}&limit={{ $pickRandom([10, 25, 50]) }}"
+  - name: create-post
+    weight: 1
+    flow:
+      - post:
+          url: "/posts"
+          json:
+            content: "Load test post {{ $randomNumber(100000, 999999) }} at {{ $timestamp }}"
+            attachments: []
