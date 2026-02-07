@@ -182,7 +182,11 @@ export async function requestOtp(req, res) {
     } catch (err) {
       logger.error("otp.request: mail send failed", {
         email,
-        error: String(err),
+        error: err, // log full object for better visibility (Render will JSON-stringify)
+        message: err?.message,
+        code: err?.code,
+        status: err?.statusCode,
+        stack: err?.stack,
       });
       return res.status(502).json({ error: "Failed to send OTP email" });
     }
