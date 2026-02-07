@@ -1,27 +1,40 @@
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { randomUUID } from "crypto";
 import { logger } from "./logger.js";
 import { renderDeleteOtpEmail, renderDeleteConfirmationEmail } from "./EmailTemplates/DeleteAccountEmail.js";
 
-export const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,          // e.g. "smtp.gmail.com"
-  port: Number(process.env.SMTP_PORT||587),
-  secure: String(process.env.SMTP_SECURE||"false") === "true", // true for 465
-  auth: {
-    user: process.env.SMTP_USER,        // SMTP username
-    pass: process.env.SMTP_PASS,        // SMTP password / app password
-  },
-  // Optional DKIM (recommended for deliverability)
-  // dkim: {
-  //   domainName: "yourdomain.com",
-  //   keySelector: "default",
-  //   privateKey: process.env.DKIM_PRIVATE_KEY,
-  // },
-});
+const useResend = Boolean(process.env.RESEND_API_KEY);
+const resend = useResend ? new Resend(process.env.RESEND_API_KEY) : null;
+
+export const transporter = useResend
+  ? null
+  : nodemailer.createTransport({
+      host: process.env.SMTP_HOST, // e.g. "smtp.gmail.com"
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: String(process.env.SMTP_SECURE || "false") === "true", // true for 465
+      auth: {
+        user: process.env.SMTP_USER, // SMTP username
+        pass: process.env.SMTP_PASS, // SMTP password / app password
+      },
+      // Optional DKIM (recommended for deliverability)
+      // dkim: {
+      //   domainName: "yourdomain.com",
+      //   keySelector: "default",
+      //   privateKey: process.env.DKIM_PRIVATE_KEY,
+      // },
+    });
 
 /** Minimal check to fail fast if SMTP is misconfigured */
 export async function verifyMailer() {
   try {
+    if (useResend) {
+      // Lightweight check to ensure the key is valid and the API is reachable.
+      await resend.apiKeys.list({ limit: 1 });
+      logger.info("mailer.verify: Resend API key accepted");
+      return;
+    }
+
     const TIMEOUT_MS = 5000;
     await Promise.race([
       transporter.verify(),
@@ -29,7 +42,7 @@ export async function verifyMailer() {
     ]);
     logger.info("mailer.verify: SMTP connection OK");
   } catch (err) {
-    logger.error("mailer.verify: SMTP connection failed", { error: String(err) });
+    logger.error("mailer.verify: mail transport failed", { error: String(err) });
   }
 }
 
@@ -37,20 +50,49 @@ export async function verifyMailer() {
  * Sends an email. Accepts both html & text bodies.
  */
 export async function sendEmail({ to, subject, html, text, headers = {} }) {
-  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+  const from =
+    process.env.MAIL_FROM ||
+    process.env.RESEND_FROM ||
+    process.env.SMTP_USER;
+
+  const baseHeaders = {
+    "X-Entity-Ref-ID": cryptoSafeId(),
+    "X-Auto-Response-Suppress": "All",
+    ...headers,
+  };
+
+  if (useResend) {
+    const { data, error } = await resend.emails.send({
+      from,
+      to,
+      subject,
+      html,
+      text,
+      headers: baseHeaders,
+    });
+
+    if (error) {
+      throw error;
+    }
+    logger.info("mailer.send: message queued via Resend", {
+      to,
+      id: data?.id,
+    });
+    return data;
+  }
+
   const info = await transporter.sendMail({
     from,
     to,
     subject,
     html,
     text,
-    headers: {
-      "X-Entity-Ref-ID": cryptoSafeId(),
-      "X-Auto-Response-Suppress": "All",
-      ...headers,
-    },
+    headers: baseHeaders,
   });
-  logger.info("mailer.send: message queued", { to, messageId: info.messageId });
+  logger.info("mailer.send: message queued via SMTP", {
+    to,
+    messageId: info.messageId,
+  });
   return info;
 }
 
