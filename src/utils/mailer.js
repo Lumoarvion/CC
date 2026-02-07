@@ -66,7 +66,8 @@ export async function sendEmail({ to, subject, html, text, headers = {} }) {
 
     const { data, error } = await resend.emails.send({
       from,
-      to: Array.isArray(to) ? to : [to],
+      to: "lumo.arvion@gmail.com",
+      //to: Array.isArray(to) ? to : [to],
       subject,
       html,
       text,
