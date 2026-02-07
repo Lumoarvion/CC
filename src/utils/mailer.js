@@ -50,11 +50,6 @@ export async function verifyMailer() {
  * Sends an email. Accepts both html & text bodies.
  */
 export async function sendEmail({ to, subject, html, text, headers = {} }) {
-  const from =
-    process.env.MAIL_FROM ||
-    process.env.RESEND_FROM ||
-    process.env.SMTP_USER;
-
   const baseHeaders = {
     "X-Entity-Ref-ID": cryptoSafeId(),
     "X-Auto-Response-Suppress": "All",
@@ -62,9 +57,16 @@ export async function sendEmail({ to, subject, html, text, headers = {} }) {
   };
 
   if (useResend) {
+    const from =
+      process.env.RESEND_FROM ||
+      process.env.MAIL_FROM ||
+      "onboarding@resend.dev";
+
+    logger.info("mailer.send: using Resend", { from, to });
+
     const { data, error } = await resend.emails.send({
       from,
-      to,
+      to: Array.isArray(to) ? to : [to],
       subject,
       html,
       text,
@@ -80,6 +82,8 @@ export async function sendEmail({ to, subject, html, text, headers = {} }) {
     });
     return data;
   }
+
+  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
 
   const info = await transporter.sendMail({
     from,
