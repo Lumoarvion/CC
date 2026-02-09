@@ -75,6 +75,13 @@ const doc = {
           designationId: 301,
         },
       },
+      UserSelf: {
+        allOf: [
+          { $ref: '#/components/schemas/UserSummary' },
+          { type: 'object', properties: { email: { type: 'string', format: 'email' } }, required: ['email'] },
+        ],
+        description: 'Fields visible to the authenticated user about themselves.',
+      },
       AuthRegisterRequest: {
         type: 'object',
         description: 'Payload for /auth/register. Usernames are trimmed and validated before duplicate checks.',
@@ -1121,6 +1128,7 @@ autogen(outputFile, endpointsFiles, doc)
           quoteCount: { type: 'integer', minimum: 0, description: 'Running total of quotes/reposts (future-ready).' },
           viewCount: { type: 'integer', minimum: 0, description: 'Aggregated impressions (populated asynchronously).' },
           viewerHasLiked: { type: 'boolean', description: 'Whether the requesting user currently likes the post.' },
+          viewerFollowsAuthor: { type: 'boolean', description: 'Whether the requesting user follows the post author.' },
           createdAt: { type: 'string', format: 'date-time' },
           updatedAt: { type: 'string', format: 'date-time' }
         },
@@ -1175,6 +1183,7 @@ autogen(outputFile, endpointsFiles, doc)
               quoteCount: 0,
               viewCount: 256,
               viewerHasLiked: false,
+              viewerFollowsAuthor: false,
               createdAt: '2025-10-06T17:00:00.000Z',
               updatedAt: '2025-10-06T17:00:00.000Z'
             }

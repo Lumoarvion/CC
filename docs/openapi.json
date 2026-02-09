@@ -35,69 +35,35 @@
   "paths": {
     "/health": {
       "get": {
-        "summary": "Health check",
-        "description": "Simple liveness check.",
-        "tags": [
-          "Health"
-        ],
+        "description": "GET /health",
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "boolean"
-                    }
-                  },
-                  "example": {
-                    "ok": true
-                  }
-                }
-              }
-            }
+            "description": "OK"
           }
-        }
+        },
+        "summary": "GET /health"
       }
     },
     "/admins": {
       "post": {
-        "summary": "Create super admin (legacy)",
-        "description": "Create an admin user (legacy endpoint).",
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "description": "POST /admins",
         "responses": {
-          "200": {
-            "description": "Created admin"
+          "default": {
+            "description": ""
           }
-        }
+        },
+        "summary": "POST /admins"
       }
     },
     "/departments/internal": {
       "get": {
-        "summary": "List internal departments (legacy)",
-        "description": "Legacy internal departments listing.",
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "description": "GET /departments/internal",
         "responses": {
-          "200": {
-            "description": "Departments list"
+          "default": {
+            "description": ""
           }
-        }
+        },
+        "summary": "GET /departments/internal"
       }
     },
     "/users/{id}": {
@@ -206,31 +172,13 @@
     },
     "/announcements/{id}": {
       "patch": {
-        "summary": "Update announcement (legacy path)",
-        "description": "Update announcement content/type.",
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
+        "description": "PATCH /announcements/{id}",
         "responses": {
-          "200": {
-            "description": "Updated"
+          "default": {
+            "description": ""
           }
-        }
+        },
+        "summary": "PATCH /announcements/{id}"
       },
       "delete": {
         "description": "DELETE /announcements/{id}",
@@ -244,60 +192,24 @@
     },
     "/announcements/{id}/archive": {
       "post": {
-        "summary": "Archive announcement (legacy path)",
-        "description": "Archive announcement by id.",
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
+        "description": "POST /announcements/{id}/archive",
         "responses": {
-          "200": {
-            "description": "Archived"
+          "default": {
+            "description": ""
           }
-        }
+        },
+        "summary": "POST /announcements/{id}/archive"
       }
     },
     "/announcements/{id}/restore": {
       "post": {
-        "summary": "Restore announcement (legacy path)",
-        "description": "Restore archived announcement.",
-        "tags": [
-          "Admin"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
+        "description": "POST /announcements/{id}/restore",
         "responses": {
-          "200": {
-            "description": "Restored"
+          "default": {
+            "description": ""
           }
-        }
+        },
+        "summary": "POST /announcements/{id}/restore"
       }
     },
     "/auth/register": {
@@ -875,7 +787,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserSummary"
+                  "$ref": "#/components/schemas/UserSelf"
                 }
               }
             }
@@ -938,7 +850,7 @@
                       "type": "boolean"
                     },
                     "profile": {
-                      "$ref": "#/components/schemas/UserSummary"
+                      "$ref": "#/components/schemas/UserSelf"
                     }
                   }
                 }
@@ -1124,7 +1036,7 @@
           }
         ],
         "tags": [
-          "Profile"
+          "Users"
         ],
         "summary": "Request account deletion (OTP)",
         "requestBody": {
@@ -1234,7 +1146,7 @@
           }
         ],
         "tags": [
-          "Profile"
+          "Users"
         ],
         "summary": "Confirm account deletion",
         "requestBody": {
@@ -1251,6 +1163,72 @@
             }
           }
         }
+      }
+    },
+    "/{id}/followers": {
+      "get": {
+        "description": "GET /{id}/followers",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /{id}/followers"
+      }
+    },
+    "/{id}/following": {
+      "get": {
+        "description": "GET /{id}/following",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /{id}/following"
+      }
+    },
+    "/{id}/posts": {
+      "get": {
+        "description": "GET /{id}/posts",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /{id}/posts"
+      }
+    },
+    "/{id}/replies": {
+      "get": {
+        "description": "GET /{id}/replies",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /{id}/replies"
+      }
+    },
+    "/{id}/media": {
+      "get": {
+        "description": "GET /{id}/media",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /{id}/media"
+      }
+    },
+    "/{id}/likes": {
+      "get": {
+        "description": "GET /{id}/likes",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /{id}/likes"
       }
     },
     "/users/{id}/follow": {
@@ -1405,6 +1383,39 @@
         }
       }
     },
+    "/saved": {
+      "get": {
+        "description": "GET /saved",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "GET /saved"
+      }
+    },
+    "/{id}/archive": {
+      "post": {
+        "description": "POST /{id}/archive",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/archive"
+      }
+    },
+    "/{id}/restore": {
+      "post": {
+        "description": "POST /{id}/restore",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/restore"
+      }
+    },
     "/posts/{id}/like": {
       "post": {
         "tags": [
@@ -1482,6 +1493,46 @@
             "description": "Not found"
           }
         }
+      }
+    },
+    "/{id}/save": {
+      "post": {
+        "description": "POST /{id}/save",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/save"
+      },
+      "delete": {
+        "description": "DELETE /{id}/save",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "DELETE /{id}/save"
+      }
+    },
+    "/{id}/pin": {
+      "post": {
+        "description": "POST /{id}/pin",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/pin"
+      },
+      "delete": {
+        "description": "DELETE /{id}/pin",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "DELETE /{id}/pin"
       }
     },
     "/posts/{id}/comments": {
@@ -1582,6 +1633,26 @@
             }
           }
         }
+      }
+    },
+    "/{postId}/comments/{commentId}": {
+      "patch": {
+        "description": "PATCH /{postId}/comments/{commentId}",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "PATCH /{postId}/comments/{commentId}"
+      },
+      "delete": {
+        "description": "DELETE /{postId}/comments/{commentId}",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "DELETE /{postId}/comments/{commentId}"
       }
     },
     "/media/presign": {
@@ -2270,7 +2341,6 @@
     "/posts/{id}": {
       "delete": {
         "tags": [
-          "Profile",
           "Posts"
         ],
         "summary": "Delete a post permanently",
@@ -2473,6 +2543,94 @@
           }
         },
         "description": "List following"
+      }
+    },
+    "/notifications": {
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "List notifications",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notifications/{id}/read": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Mark notification read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationReadResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/notifications/read-all": {
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Mark all notifications read",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationReadResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/users/{id}/posts": {
@@ -2711,173 +2869,6 @@
         }
       }
     },
-    "/posts/{id}/pin": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Pin a post to profile",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid id"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Unpin a post",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
-    "/notifications": {
-      "get": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "List notifications",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Notifications",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationListResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/notifications/{id}/read": {
-      "patch": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Mark notification read",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationReadResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
-    "/notifications/read-all": {
-      "patch": {
-        "tags": [
-          "Users"
-        ],
-        "summary": "Mark all notifications read",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/NotificationReadResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/posts/saved": {
       "get": {
         "tags": [
@@ -2967,6 +2958,85 @@
           "Posts"
         ],
         "summary": "Unsave a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/posts/{id}/pin": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Pin a post to profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid id"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Unpin a post",
         "security": [
           {
             "bearerAuth": []
@@ -3223,6 +3293,27 @@
           "id",
           "username"
         ]
+      },
+      "UserSelf": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/UserSummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "email": {
+                "type": "string",
+                "format": "email",
+                "example": "alice@example.edu"
+              }
+            },
+            "required": [
+              "email"
+            ]
+          }
+        ],
+        "description": "Fields visible to the authenticated user about themselves."
       },
       "AuthRegisterRequest": {
         "type": "object",
@@ -4212,6 +4303,10 @@
             "type": "boolean",
             "description": "Whether the requesting user currently likes the post."
           },
+          "viewerFollowsAuthor": {
+            "type": "boolean",
+            "description": "Whether the requesting user follows the post author."
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -4878,6 +4973,14 @@
           "postType": {
             "type": "string"
           },
+          "audienceScope": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "user": {
+            "$ref": "#/components/schemas/PostAuthor",
+            "nullable": true
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time"
@@ -4885,75 +4988,16 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "user": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "integer"
-              },
-              "fullName": {
-                "type": "string"
-              },
-              "username": {
-                "type": "string"
-              }
-            }
-          },
-          "likeCount": {
-            "type": "integer"
-          },
-          "commentCount": {
-            "type": "integer"
-          },
-          "quoteCount": {
-            "type": "integer"
-          },
-          "viewCount": {
-            "type": "integer"
-          },
-          "viewerHasLiked": {
-            "type": "boolean"
-          },
-          "viewerHasSaved": {
-            "type": "boolean"
-          },
-          "media": {
-            "type": "array",
-            "items": {
-              "type": "object"
-            }
-          },
-          "isPinned": {
-            "type": "boolean"
-          },
-          "pinnedAt": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
           }
         },
-        "example": {
-          "id": 501,
-          "content": "Excited to launch the new profile page!",
-          "postType": "standard",
-          "createdAt": "2026-01-30T10:15:00.000Z",
-          "updatedAt": "2026-01-30T10:15:00.000Z",
-          "user": {
-            "id": 42,
-            "fullName": "Alice Doe",
-            "username": "alice"
-          },
-          "likeCount": 24,
-          "commentCount": 3,
-          "quoteCount": 1,
-          "viewCount": 210,
-          "viewerHasLiked": true,
-          "viewerHasSaved": false,
-          "media": [],
-          "isPinned": true,
-          "pinnedAt": "2026-01-31T09:00:00.000Z"
-        }
+        "required": [
+          "id",
+          "content",
+          "postType",
+          "audienceScope",
+          "createdAt",
+          "updatedAt"
+        ]
       },
       "PostFeedResponse": {
         "type": "object",
@@ -5039,6 +5083,7 @@
               "quoteCount": 0,
               "viewCount": 256,
               "viewerHasLiked": false,
+              "viewerFollowsAuthor": false,
               "createdAt": "2025-10-06T17:00:00.000Z",
               "updatedAt": "2025-10-06T17:00:00.000Z"
             }
@@ -5079,16 +5124,29 @@
         "properties": {
           "filename": {
             "type": "string",
-            "description": "Original file name supplied by the client."
+            "minLength": 1,
+            "maxLength": 255,
+            "description": "Original client filename. Empty strings are rejected; include the real extension when possible so the backend can preserve it."
           },
           "contentType": {
             "type": "string",
-            "description": "MIME type detected prior to upload (image/* or video/*)."
+            "description": "Normalized MIME type for the file that will be uploaded.",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/gif",
+              "video/mp4",
+              "video/quicktime",
+              "video/webm"
+            ]
           },
           "size": {
             "type": "integer",
-            "nullable": true,
-            "description": "Optional file size in bytes for pre-flight validation."
+            "format": "int64",
+            "minimum": 1,
+            "maximum": 52428800,
+            "description": "Optional file size in bytes for pre-flight validation. Must be a positive integer <= 52,428,800 (50MB) when provided."
           }
         },
         "additionalProperties": false,
@@ -5104,31 +5162,35 @@
           "uploadUrl": {
             "type": "string",
             "format": "uri",
-            "description": "Pre-signed Cloudflare R2 PUT URL."
+            "description": "Pre-signed Cloudflare R2 HTTPS PUT URL to which the raw binary should be uploaded."
           },
           "expiresIn": {
             "type": "integer",
-            "description": "Number of seconds before the upload URL expires."
+            "minimum": 60,
+            "description": "Number of seconds before the upload URL expires (defaults to 300s / 5 minutes)."
           },
           "objectKey": {
             "type": "string",
-            "description": "R2 object key to store in attachment metadata."
+            "description": "Opaque R2 object key; store this under `metadata.r2Key` when creating or updating posts."
           },
           "publicUrl": {
             "type": "string",
             "format": "uri",
-            "description": "Public CDN URL for the uploaded asset."
+            "description": "Public CDN URL that can be saved on the Post attachment."
           },
           "requiredHeaders": {
             "type": "object",
             "additionalProperties": {
               "type": "string"
             },
-            "description": "Headers that must be included when uploading."
+            "description": "Headers that must be included when uploading (currently just `Content-Type`)."
           },
           "maxUploadBytes": {
             "type": "integer",
-            "description": "Maximum allowed upload size in bytes."
+            "enum": [
+              52428800
+            ],
+            "description": "Maximum allowed upload size in bytes (52,428,800 ~ 50MB)."
           }
         },
         "required": [
@@ -5587,134 +5649,6 @@
           "createdAt"
         ]
       },
-      "SimpleOk": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          }
-        },
-        "example": {
-          "ok": true
-        }
-      },
-      "UserFeedResponse": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "integer"
-          },
-          "prevPage": {
-            "type": "integer",
-            "nullable": true
-          },
-          "nextPage": {
-            "type": "integer",
-            "nullable": true
-          },
-          "limit": {
-            "type": "integer"
-          },
-          "total": {
-            "type": "integer"
-          },
-          "count": {
-            "type": "integer"
-          },
-          "hasMore": {
-            "type": "boolean"
-          },
-          "posts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PostSummary"
-            }
-          }
-        },
-        "example": {
-          "page": 1,
-          "prevPage": null,
-          "nextPage": 2,
-          "limit": 10,
-          "total": 42,
-          "count": 10,
-          "hasMore": true,
-          "posts": [
-            {
-              "id": 510,
-              "content": "Replying to @bob about the launch",
-              "postType": "standard",
-              "createdAt": "2026-01-31T08:00:00.000Z",
-              "updatedAt": "2026-01-31T08:00:00.000Z",
-              "user": {
-                "id": 42,
-                "fullName": "Alice Doe",
-                "username": "alice"
-              },
-              "likeCount": 5,
-              "commentCount": 0,
-              "quoteCount": 0,
-              "viewCount": 60,
-              "viewerHasLiked": false,
-              "viewerHasSaved": false,
-              "media": [],
-              "isPinned": false,
-              "pinnedAt": null
-            }
-          ]
-        }
-      },
-      "UserPostsResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/UserFeedResponse"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "pinned": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/PostSummary"
-                }
-              }
-            }
-          }
-        ],
-        "example": {
-          "page": 1,
-          "prevPage": null,
-          "nextPage": 2,
-          "limit": 10,
-          "total": 12,
-          "count": 9,
-          "hasMore": true,
-          "pinned": [
-            {
-              "id": 501,
-              "content": "Excited to launch the new profile page!",
-              "postType": "standard",
-              "createdAt": "2026-01-30T10:15:00.000Z",
-              "updatedAt": "2026-01-30T10:15:00.000Z",
-              "user": {
-                "id": 42,
-                "fullName": "Alice Doe",
-                "username": "alice"
-              },
-              "likeCount": 24,
-              "commentCount": 3,
-              "quoteCount": 1,
-              "viewCount": 210,
-              "viewerHasLiked": true,
-              "viewerHasSaved": false,
-              "media": [],
-              "isPinned": true,
-              "pinnedAt": "2026-01-31T09:00:00.000Z"
-            }
-          ],
-          "posts": []
-        }
-      },
       "NotificationListResponse": {
         "type": "object",
         "properties": {
@@ -5787,6 +5721,17 @@
             "status": "read",
             "readAt": "2026-01-02T00:00:00.000Z"
           }
+        }
+      },
+      "SimpleOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          }
+        },
+        "example": {
+          "ok": true
         }
       }
     }

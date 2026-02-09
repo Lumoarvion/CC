@@ -462,28 +462,13 @@ export const feed = async (req, res) => {
     ]);
     const queryDurationMs = Date.now() - queryStartedAt;
 
-    const postIds = posts.map((p) => p.id);
-    let likedPostIds = new Set();
-    let savedPostIds = new Set();
-    if (postIds.length > 0) {
-      const likes = await Like.findAll({
-        where: { userId: req.user.id, postId: { [Op.in]: postIds } },
-        attributes: ['postId'],
-      });
-      likedPostIds = new Set(likes.map((like) => like.postId));
-      const saves = await PostSave.findAll({
-        where: { userId: req.user.id, postId: { [Op.in]: postIds } },
-        attributes: ['postId'],
-      });
-      savedPostIds = new Set(saves.map((save) => save.postId));
-    }
-    logger.info('post.feed.viewer_likes_loaded', { userId: req.user.id, postCount: postIds.length, viewerLikes: likedPostIds.size, viewerSaves: savedPostIds.size });
-
-    const serialized = posts.map((post) => {
-      const plain = toPlainPost(post);
-      plain.viewerHasLiked = likedPostIds.has(post.id);
-      plain.viewerHasSaved = savedPostIds.has(post.id);
-      return plain;
+    const { posts: serialized, likedCount, savedCount, followingCount } = await serializePostsForViewer(posts, req.user.id);
+    logger.info('post.feed.viewer_flags_loaded', {
+      userId: req.user.id,
+      postCount: serialized.length,
+      viewerLikes: likedCount,
+      viewerSaves: savedCount,
+      viewerFollows: followingCount,
     });
     const returnedCount = serialized.length;
     const hasMore = offset + returnedCount < total;
@@ -522,7 +507,9 @@ export const feed = async (req, res) => {
       limit,
       durationMs: queryDurationMs,
       statsIncluded: true,
-      viewerLikes: likedPostIds.size,
+      viewerLikes: likedCount,
+      viewerSaves: savedCount,
+      viewerFollows: followingCount,
       hasMore,
       total,
       nextPage,
@@ -555,27 +542,48 @@ function buildPaginationResponse(page, limit, returnedCount, total, items) {
   return { page, prevPage, nextPage, limit, total, count: returnedCount, hasMore, posts: items };
 }
 
-async function hydrateViewerFlags(viewerId, posts) {
+async function hydrateViewerFlags(viewerId, posts, { includeSaves = true } = {}) {
   const postIds = posts.map((p) => p.id);
-  if (!postIds.length) return { likedPostIds: new Set(), savedPostIds: new Set() };
-  const [likes, saves] = await Promise.all([
-    Like.findAll({ where: { userId: viewerId, postId: { [Op.in]: postIds } }, attributes: ['postId'] }),
-    PostSave.findAll({ where: { userId: viewerId, postId: { [Op.in]: postIds } }, attributes: ['postId'] }),
-  ]);
+  const authorIds = posts.map((p) => p.userId);
+  if (!viewerId || (!postIds.length && !authorIds.length)) {
+    return { likedPostIds: new Set(), savedPostIds: new Set(), followingAuthorIds: new Set() };
+  }
+
+  const likePromise = postIds.length
+    ? Like.findAll({ where: { userId: viewerId, postId: { [Op.in]: postIds } }, attributes: ['postId'] })
+    : Promise.resolve([]);
+  const savePromise =
+    includeSaves && postIds.length
+      ? PostSave.findAll({ where: { userId: viewerId, postId: { [Op.in]: postIds } }, attributes: ['postId'] })
+      : Promise.resolve([]);
+  const followPromise = authorIds.length
+    ? Follow.findAll({ where: { followerId: viewerId, followingId: { [Op.in]: authorIds } }, attributes: ['followingId'] })
+    : Promise.resolve([]);
+
+  const [likes, saves, follows] = await Promise.all([likePromise, savePromise, followPromise]);
   return {
     likedPostIds: new Set(likes.map((l) => l.postId)),
     savedPostIds: new Set(saves.map((s) => s.postId)),
+    followingAuthorIds: new Set(follows.map((f) => f.followingId)),
   };
 }
 
-async function serializePostsForViewer(posts, viewerId) {
-  const { likedPostIds, savedPostIds } = await hydrateViewerFlags(viewerId, posts);
-  return posts.map((post) => {
-    const plain = toPlainPost(post);
-    plain.viewerHasLiked = likedPostIds.has(post.id);
-    plain.viewerHasSaved = savedPostIds.has(post.id);
-    return plain;
+async function serializePostsForViewer(posts, viewerId, { forceSaved = false } = {}) {
+  const { likedPostIds, savedPostIds, followingAuthorIds } = await hydrateViewerFlags(viewerId, posts, {
+    includeSaves: !forceSaved,
   });
+  return {
+    likedCount: likedPostIds.size,
+    savedCount: savedPostIds.size,
+    followingCount: followingAuthorIds.size,
+    posts: posts.map((post) => {
+      const plain = toPlainPost(post);
+      plain.viewerHasLiked = likedPostIds.has(post.id);
+      plain.viewerHasSaved = forceSaved ? true : savedPostIds.has(post.id);
+      plain.viewerFollowsAuthor = followingAuthorIds.has(post.userId);
+      return plain;
+    }),
+  };
 }
 
 async function fetchUserPostsBase({ userId, viewerId, page = 1, limit = 10, whereExtra = {}, includeMediaRequired = false }) {
@@ -599,7 +607,7 @@ async function fetchUserPostsBase({ userId, viewerId, page = 1, limit = 10, wher
       offset,
     }),
   ]);
-  const serialized = await serializePostsForViewer(posts, viewerId);
+  const { posts: serialized } = await serializePostsForViewer(posts, viewerId);
   return { total, posts: serialized, page, limit };
 }
 
@@ -771,7 +779,7 @@ export const userLikes = async (req, res) => {
       }),
     ]);
     const posts = likes.map((like) => like.Post).filter(Boolean);
-    const serialized = await serializePostsForViewer(posts, req.user.id);
+    const { posts: serialized } = await serializePostsForViewer(posts, req.user.id);
     const response = buildPaginationResponse(page, limit, serialized.length, total, serialized);
     return res.json(response);
   } catch (err) {
@@ -898,22 +906,14 @@ export const savedPosts = async (req, res) => {
     });
 
     const posts = rows.map((row) => row.Post).filter(Boolean);
-    const postIds = posts.map((p) => p.id);
-    let likedPostIds = new Set();
-    if (postIds.length > 0) {
-      const likes = await Like.findAll({
-        where: { userId: req.user.id, postId: { [Op.in]: postIds } },
-        attributes: ['postId'],
-      });
-      likedPostIds = new Set(likes.map((like) => like.postId));
-    }
-    logger.info('post.saved.list.viewer_flags_loaded', { userId: req.user.id, postCount: postIds.length, viewerLikes: likedPostIds.size });
-
-    const serialized = posts.map((post) => {
-      const plain = toPlainPost(post);
-      plain.viewerHasLiked = likedPostIds.has(post.id);
-      plain.viewerHasSaved = true;
-      return plain;
+    const { posts: serialized, likedCount, followingCount } = await serializePostsForViewer(posts, req.user.id, {
+      forceSaved: true,
+    });
+    logger.info('post.saved.list.viewer_flags_loaded', {
+      userId: req.user.id,
+      postCount: serialized.length,
+      viewerLikes: likedCount,
+      viewerFollows: followingCount,
     });
     const returnedCount = serialized.length;
     const hasMore = offset + returnedCount < total;

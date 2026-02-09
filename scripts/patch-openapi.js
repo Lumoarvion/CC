@@ -12,9 +12,53 @@ const bearer = [{ bearerAuth: [] }];
 function ensureSchemas() {
   spec.components = spec.components || {};
   spec.components.schemas = spec.components.schemas || {};
-  if (!spec.components.schemas.SimpleOk) {
-    spec.components.schemas.SimpleOk = { type: 'object', properties: { ok: { type: 'boolean' } }, example: { ok: true } };
-  }
+  // Normalize SimpleOk
+  spec.components.schemas.SimpleOk = { type: 'object', properties: { ok: { type: 'boolean' } }, example: { ok: true } };
+
+  // Canonical UserSummary (public profile, no email)
+  spec.components.schemas.UserSummary = {
+    type: 'object',
+    properties: {
+      id: { type: 'integer', example: 42 },
+      fullName: { type: 'string', example: 'Alice Doe' },
+      username: { type: 'string', example: 'alice' },
+      bio: { type: 'string', example: 'CS student and maker.' },
+      avatarUrl: { type: 'string', format: 'uri', example: '/uploads/avatars/a-256.webp' },
+      avatarUrlFull: { type: 'string', format: 'uri', example: '/uploads/avatars/a-1024.webp' },
+      bannerUrl: { type: 'string', format: 'uri', nullable: true, example: '/uploads/banners/a.webp' },
+      website: { type: 'string', nullable: true, example: 'https://alice.dev' },
+      location: { type: 'string', nullable: true, example: 'Chennai' },
+      joinDate: { type: 'string', format: 'date', example: '2024-08-15' },
+      isVerified: { type: 'boolean', example: true },
+      isPrivate: { type: 'boolean', example: false },
+      isLimited: { type: 'boolean', example: false },
+      followersCount: { type: 'integer', example: 120 },
+      followingCount: { type: 'integer', example: 180 },
+      postsCount: { type: 'integer', example: 56 },
+      likesCount: { type: 'integer', example: 240 },
+      bookmarksCount: { type: 'integer', example: 35 },
+      pinnedPostIds: { type: 'array', items: { type: 'integer' }, example: [501, 499] },
+      viewerFollowing: { type: 'boolean', example: true },
+      viewerFollowsBack: { type: 'boolean', example: false },
+      viewerMuted: { type: 'boolean', example: false },
+      viewerBlocked: { type: 'boolean', example: false },
+      avatarInitial: { type: 'string', example: 'A' },
+    },
+    required: ['id', 'username'],
+  };
+
+  // Self profile extends UserSummary with email
+  spec.components.schemas.UserSelf = {
+    allOf: [
+      { $ref: '#/components/schemas/UserSummary' },
+      {
+        type: 'object',
+        properties: { email: { type: 'string', format: 'email', example: 'alice@example.edu' } },
+        required: ['email'],
+      },
+    ],
+    description: 'Fields visible to the authenticated user about themselves.',
+  };
 }
 
 function ensurePath(p) {
@@ -56,7 +100,7 @@ function addProfileEndpoints() {
     tags: ['Profile'],
     summary: 'Get current user profile',
     security: bearer,
-    responses: { 200: { description: 'Profile', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserSummary' } } } } },
+    responses: { 200: { description: 'Profile', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserSelf' } } } } },
   });
 
   setOp('/users/me', 'patch', {
@@ -88,7 +132,7 @@ function addProfileEndpoints() {
         description: 'Updated profile',
         content: {
           'application/json': {
-            schema: { type: 'object', properties: { ok: { type: 'boolean' }, profile: { $ref: '#/components/schemas/UserSummary' } } },
+            schema: { type: 'object', properties: { ok: { type: 'boolean' }, profile: { $ref: '#/components/schemas/UserSelf' } } },
           },
         },
       },

@@ -7,7 +7,7 @@ import { sequelize } from '../db.js';
 import { createNotification } from '../utils/notifications.js';
 import UserPin from '../models/UserPin.js';
 
-async function buildProfilePayload(targetUser, viewerId) {
+async function buildProfilePayload(targetUser, viewerId, { includeEmail = false } = {}) {
   if (!targetUser) return null;
   const base = targetUser.fullName || targetUser.username || targetUser.email || '';
   const avatarInitial = String(base).trim().charAt(0).toUpperCase();
@@ -38,10 +38,11 @@ async function buildProfilePayload(targetUser, viewerId) {
     viewerFollowsBack = Boolean(f2 && !f2.deletedAt);
   }
 
-  return {
+  const payload = {
     id: targetUser.id,
     fullName: targetUser.fullName,
     username: targetUser.username,
+    email: targetUser.email,
     bio: targetUser.bio,
     avatarUrl: targetUser.avatarUrl,
     avatarUrlFull: targetUser.avatarUrlFull,
@@ -64,6 +65,11 @@ async function buildProfilePayload(targetUser, viewerId) {
     viewerBlocked: false,
     avatarInitial,
   };
+
+  if (!includeEmail) {
+    delete payload.email;
+  }
+  return payload;
 }
 
 export const me = async (req, res) => {
@@ -89,7 +95,7 @@ export const me = async (req, res) => {
     ],
   });
   if (!user) return res.status(404).json({ message: 'User not found' });
-  const payload = await buildProfilePayload(user, req.user.id);
+  const payload = await buildProfilePayload(user, req.user.id, { includeEmail: true });
   return res.json(payload);
 };
 
@@ -141,7 +147,7 @@ export const updateProfile = async (req, res) => {
   }
   await User.update(updates, { where: { id: req.user.id } });
   const user = await User.findByPk(req.user.id);
-  const payload = await buildProfilePayload(user, req.user.id);
+  const payload = await buildProfilePayload(user, req.user.id, { includeEmail: true });
   return res.json({ ok: true, profile: payload });
 };
 
