@@ -4,6 +4,7 @@ import { buildStandardPostScope, normalizeAudienceScope } from '../utils/audienc
 import { logger } from '../utils/logger.js';
 import { normalizePostMediaInput, attachMediaToPost, serializeMedia, deleteMediaForPost } from '../utils/postMedia.js';
 import { adjustPostStats, getPostStats, projectStats } from '../utils/postStats.js';
+import { trackViews } from '../utils/viewTracker.js';
 import { createNotification } from '../utils/notifications.js';
 
 const ADMIN_ROLE_KEYS = new Set([0, 1]);
@@ -200,7 +201,37 @@ async function loadReferencedPost(postId, relationLabel = 'generic') {
   return post;
 }
 
+// Mode-aware wrappers let us expose separate endpoints while reusing core logic
+export const createStandardPost = (req, res) => {
+  req._postMode = 'standard';
+  return createPost(req, res);
+};
+
+export const repostPost = (req, res) => {
+  req._postMode = 'repost';
+  req.body = req.body || {};
+  req.body.quotedPostId = Number(req.params.id);
+  return createPost(req, res);
+};
+
+export const quotePost = (req, res) => {
+  req._postMode = 'quote';
+  req.body = req.body || {};
+  req.body.quotedPostId = Number(req.params.id);
+  req.body.parentPostId = null;
+  return createPost(req, res);
+};
+
+export const replyPost = (req, res) => {
+  req._postMode = 'reply';
+  req.body = req.body || {};
+  req.body.parentPostId = Number(req.params.id);
+  req.body.quotedPostId = null;
+  return createPost(req, res);
+};
+
 export const createPost = async (req, res) => {
+  const mode = req._postMode || 'standard';
   try {
     const { content, attachments: rawAttachments, quotedPostId, parentPostId } = req.body || {};
     const attachmentsCount = Array.isArray(rawAttachments) ? rawAttachments.length : rawAttachments ? 1 : 0;
@@ -213,13 +244,75 @@ export const createPost = async (req, res) => {
     });
 
     const sanitizedContent = sanitizeContentInput(content);
-    if (!sanitizedContent) {
+    // Mode-specific validation
+    const hasQuoted = quotedPostId !== undefined && quotedPostId !== null;
+    const hasParent = parentPostId !== undefined && parentPostId !== null;
+    const quotedIdNum = Number(quotedPostId);
+    const parentIdNum = Number(parentPostId);
+
+    if (mode === 'standard') {
+      if (hasQuoted || hasParent) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'disallowed_quoted_or_parent' });
+        return res.status(400).json({ message: 'quotedPostId and parentPostId are not allowed for standard posts' });
+      }
+      if (!sanitizedContent) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'missing_content' });
+        return res.status(400).json({ message: 'content required' });
+      }
+    }
+
+    if (mode === 'repost') {
+      if (!Number.isInteger(quotedIdNum) || quotedIdNum <= 0) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'invalid_quoted_post_id' });
+        return res.status(400).json({ message: 'invalid quotedPostId' });
+      }
+      if (sanitizedContent) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'content_not_allowed_in_repost' });
+        return res.status(400).json({ message: 'content is not allowed for repost' });
+      }
+      if (attachmentsCount) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'attachments_not_allowed_in_repost' });
+        return res.status(400).json({ message: 'attachments are not allowed for repost' });
+      }
+    }
+
+    if (mode === 'quote') {
+      if (!Number.isInteger(quotedIdNum) || quotedIdNum <= 0) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'invalid_quoted_post_id' });
+        return res.status(400).json({ message: 'invalid quotedPostId' });
+      }
+      if (hasParent) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'parent_not_allowed_in_quote' });
+        return res.status(400).json({ message: 'parentPostId is not allowed for quote posts' });
+      }
+      if (!sanitizedContent && !attachmentsCount) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'missing_content_or_media_for_quote' });
+        return res.status(400).json({ message: 'content or attachments required for quote post' });
+      }
+    }
+
+    if (mode === 'reply') {
+      if (!Number.isInteger(parentIdNum) || parentIdNum <= 0) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'invalid_parent_post_id' });
+        return res.status(400).json({ message: 'invalid parentPostId' });
+      }
+      if (hasQuoted) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'quoted_not_allowed_in_reply' });
+        return res.status(400).json({ message: 'quotedPostId is not allowed for replies' });
+      }
+      if (!sanitizedContent) {
+        logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'missing_content' });
+        return res.status(400).json({ message: 'content required' });
+      }
+    }
+
+    if (!sanitizedContent && mode !== 'repost') {
       logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'missing_content' });
       return res.status(400).json({ message: 'content required' });
     }
 
     const length = countGraphemes(sanitizedContent);
-    if (length > MAX_POST_LENGTH) {
+    if (mode !== 'repost' && length > MAX_POST_LENGTH) {
       logger.info('post.create.validation_failed', { userId: req.user.id, reason: 'length_exceeded', length });
       return res.status(400).json({ message: `content exceeds ${MAX_POST_LENGTH} characters` });
     }
@@ -572,6 +665,8 @@ async function serializePostsForViewer(posts, viewerId, { forceSaved = false } =
   const { likedPostIds, savedPostIds, followingAuthorIds } = await hydrateViewerFlags(viewerId, posts, {
     includeSaves: !forceSaved,
   });
+  const viewIncrements = await trackViews({ viewerId, postIds: posts.map((p) => p.id) });
+  const incrementSet = new Set(viewIncrements || []);
   return {
     likedCount: likedPostIds.size,
     savedCount: savedPostIds.size,
@@ -581,6 +676,10 @@ async function serializePostsForViewer(posts, viewerId, { forceSaved = false } =
       plain.viewerHasLiked = likedPostIds.has(post.id);
       plain.viewerHasSaved = forceSaved ? true : savedPostIds.has(post.id);
       plain.viewerFollowsAuthor = followingAuthorIds.has(post.userId);
+      if (incrementSet.has(post.id)) {
+        plain.viewCount = (plain.viewCount || 0) + 1;
+        adjustPostStats(post.id, { viewDelta: 1 }).catch(() => {});
+      }
       return plain;
     }),
   };

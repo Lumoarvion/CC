@@ -1279,51 +1279,41 @@ autogen(outputFile, endpointsFiles, doc)
         }
       };
 
-      spec.components.schemas.PostCreate = {
+      spec.components.schemas.PostAttachments = {
+        type: 'array',
+        maxItems: 5,
+        description: 'Attach up to 5 images. If a GIF or video is included, it must be the only attachment. Include the `metadata.r2Key` issued by `/media/presign` so the backend can clean up objects.',
+        items: {
+          type: 'object',
+          required: ['type', 'url'],
+          properties: {
+            type: { type: 'string', enum: ['image', 'gif', 'video'] },
+            url: { type: 'string', format: 'uri' },
+            metadata: {
+              type: 'object',
+              nullable: true,
+              description: 'Additional media information sent back by the storage presign endpoint.',
+              properties: {
+                r2Key: { type: 'string', description: 'Required: Cloudflare R2 object key for this file.' },
+                contentType: { type: 'string', nullable: true },
+                size: { type: 'integer', nullable: true },
+                width: { type: 'integer', nullable: true },
+                height: { type: 'integer', nullable: true },
+                duration: { type: 'number', nullable: true, description: 'Duration in seconds for video/GIF uploads.' }
+              },
+              additionalProperties: true
+            }
+          },
+          additionalProperties: false
+        }
+      };
+
+      spec.components.schemas.PostCreateStandard = {
         type: 'object',
         required: ['content'],
         properties: {
           content: { type: 'string', minLength: 1, maxLength: 2000, description: 'Trimmed text, max 2000 characters. Duplicate consecutive posts rejected.' },
-          attachments: {
-            type: 'array',
-            maxItems: 5,
-            description: 'Attach up to 5 images. If a GIF or video is included, it must be the only attachment. Include the `metadata.r2Key` issued by `/media/presign` so the backend can clean up objects.',
-            items: {
-              type: 'object',
-              required: ['type', 'url'],
-              properties: {
-                type: { type: 'string', enum: ['image', 'gif', 'video'] },
-                url: { type: 'string', format: 'uri' },
-                metadata: {
-                  type: 'object',
-                  nullable: true,
-                  description: 'Additional media information sent back by the storage presign endpoint.',
-                  properties: {
-                    r2Key: { type: 'string', description: 'Required: Cloudflare R2 object key for this file.' },
-                    contentType: { type: 'string', nullable: true },
-                    size: { type: 'integer', nullable: true },
-                    width: { type: 'integer', nullable: true },
-                    height: { type: 'integer', nullable: true },
-                    duration: { type: 'number', nullable: true, description: 'Duration in seconds for video/GIF uploads.' }
-                  },
-                  additionalProperties: true
-                }
-              },
-              additionalProperties: false
-            }
-          },
-          quotedPostId: {
-            type: 'integer',
-            nullable: true,
-            description:
-              'ID of an existing post to share. When provided, the request is treated as a quote/repost; omit `content` and attachments for silent shares or include them for quote posts.'
-          },
-          parentPostId: {
-            type: 'integer',
-            nullable: true,
-            description:
-              'ID of the post this entry replies to when building threaded conversations. Not used for lightweight comments.'
-          }
+          attachments: { $ref: '#/components/schemas/PostAttachments' }
         },
         additionalProperties: false,
         example: {
@@ -1332,23 +1322,39 @@ autogen(outputFile, endpointsFiles, doc)
             {
               type: 'image',
               url: 'https://cdn.example.edu/media/posts/hackathon-poster.webp',
-              metadata: {
-                r2Key: 'users/4/posts/hackathon-poster.webp',
-                contentType: 'image/webp',
-                size: 104857,
-                width: 1024,
-                height: 576
-              }
-            },
-            {
-              type: 'image',
-              url: 'https://cdn.example.edu/media/posts/hackathon-team.jpg',
-              metadata: { r2Key: 'users/4/posts/hackathon-team.jpg', contentType: 'image/jpeg' }
+              metadata: { r2Key: 'users/4/posts/hackathon-poster.webp', contentType: 'image/webp', size: 104857, width: 1024, height: 576 }
             }
-          ],
-          quotedPostId: 42,
-          parentPostId: 41
+          ]
         }
+      };
+
+      spec.components.schemas.RepostRequest = {
+        type: 'object',
+        description: 'Silent repost; no content or attachments allowed. quotedPostId comes from the path parameter.',
+        additionalProperties: false
+      };
+
+      spec.components.schemas.QuotePostCreate = {
+        type: 'object',
+        properties: {
+          content: { type: 'string', minLength: 1, maxLength: 2000, nullable: true },
+          attachments: { $ref: '#/components/schemas/PostAttachments' }
+        },
+        additionalProperties: false,
+        description: 'Quote post; content or attachments required. quotedPostId is provided as a path parameter.',
+        example: { content: 'My take on this', attachments: [] }
+      };
+
+      spec.components.schemas.ReplyPostCreate = {
+        type: 'object',
+        required: ['content'],
+        properties: {
+          content: { type: 'string', minLength: 1, maxLength: 2000 },
+          attachments: { $ref: '#/components/schemas/PostAttachments' }
+        },
+        additionalProperties: false,
+        description: 'Reply to a post; parentPostId is provided as a path parameter.',
+        example: { content: 'Thanks for sharing!', attachments: [] }
       };
 
       spec.components.schemas.PostArchiveRequest = {

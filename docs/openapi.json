@@ -1306,7 +1306,8 @@
         "tags": [
           "Posts"
         ],
-        "summary": "Create post",
+        "summary": "Create standard post",
+        "description": "Create a normal post. quotedPostId and parentPostId are not allowed here.",
         "security": [
           {
             "bearerAuth": []
@@ -1317,7 +1318,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PostCreate"
+                "$ref": "#/components/schemas/PostCreateStandard"
               }
             }
           }
@@ -1337,6 +1338,39 @@
             "description": "Validation error"
           }
         }
+      }
+    },
+    "/{id}/repost": {
+      "post": {
+        "description": "POST /{id}/repost",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/repost"
+      }
+    },
+    "/{id}/quote": {
+      "post": {
+        "description": "POST /{id}/quote",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/quote"
+      }
+    },
+    "/{id}/reply": {
+      "post": {
+        "description": "POST /{id}/reply",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "summary": "POST /{id}/reply"
       }
     },
     "/posts/feed": {
@@ -2869,6 +2903,163 @@
         }
       }
     },
+    "/posts/{id}/repost": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Repost (silent share)",
+        "description": "Share an existing post without adding content or attachments.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RepostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created repost",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Quoted post not found"
+          }
+        }
+      }
+    },
+    "/posts/{id}/quote": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Quote post (repost with commentary/media)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuotePostCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created quote post",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Quoted post not found"
+          }
+        }
+      }
+    },
+    "/posts/{id}/reply": {
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Reply to a post",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplyPostCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created reply",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Post"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "404": {
+            "description": "Parent post not found"
+          }
+        }
+      }
+    },
     "/posts/saved": {
       "get": {
         "tags": [
@@ -4071,113 +4262,110 @@
       },
       "PostCreate": {
         "type": "object",
-        "required": [
-          "content"
-        ],
         "properties": {
-          "content": {
+          "type": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 2000,
-            "description": "Trimmed text, max 2000 characters. Duplicate consecutive posts rejected."
+            "example": "object"
           },
-          "attachments": {
+          "required": {
             "type": "array",
-            "maxItems": 5,
-            "description": "Attach up to 5 images. If a GIF or video is included, it must be the only attachment. Include the `metadata.r2Key` issued by `/media/presign` so the backend can clean up objects.",
+            "example": [
+              "content"
+            ],
             "items": {
-              "type": "object",
-              "required": [
-                "type",
-                "url"
-              ],
-              "properties": {
-                "type": {
-                  "type": "string",
-                  "enum": [
-                    "image",
-                    "gif",
-                    "video"
-                  ]
-                },
-                "url": {
-                  "type": "string",
-                  "format": "uri"
-                },
-                "metadata": {
-                  "type": "object",
-                  "nullable": true,
-                  "description": "Additional media information sent back by the storage presign endpoint.",
-                  "properties": {
-                    "r2Key": {
-                      "type": "string",
-                      "description": "Required: Cloudflare R2 object key for this file."
-                    },
-                    "contentType": {
-                      "type": "string",
-                      "nullable": true
-                    },
-                    "size": {
-                      "type": "integer",
-                      "nullable": true
-                    },
-                    "width": {
-                      "type": "integer",
-                      "nullable": true
-                    },
-                    "height": {
-                      "type": "integer",
-                      "nullable": true
-                    },
-                    "duration": {
-                      "type": "number",
-                      "nullable": true,
-                      "description": "Duration in seconds for video/GIF uploads."
-                    }
-                  },
-                  "additionalProperties": true
+              "type": "string"
+            }
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
                 }
               },
-              "additionalProperties": false
+              "attachments": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "array"
+                  },
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "example": "object"
+                      },
+                      "required": {
+                        "type": "array",
+                        "example": [
+                          "type",
+                          "url"
+                        ],
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "properties": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          },
+                          "url": {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "example": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
             }
           },
-          "quotedPostId": {
-            "type": "integer",
-            "nullable": true,
-            "description": "ID of an existing post to share. When provided, the request is treated as a quote/repost; omit `content` and attachments for silent shares or include them for quote posts."
-          },
-          "parentPostId": {
-            "type": "integer",
-            "nullable": true,
-            "description": "ID of the post this entry replies to when building threaded conversations. Not used for lightweight comments."
+          "example": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "string",
+                "example": "Hello campus!"
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "example": "image"
+                    },
+                    "url": {
+                      "type": "string",
+                      "example": "https://example.com/pic.jpg"
+                    }
+                  }
+                }
+              }
+            }
           }
-        },
-        "additionalProperties": false,
-        "example": {
-          "content": "Excited for the #Hackathon with @superadmin!",
-          "attachments": [
-            {
-              "type": "image",
-              "url": "https://cdn.example.edu/media/posts/hackathon-poster.webp",
-              "metadata": {
-                "r2Key": "users/4/posts/hackathon-poster.webp",
-                "contentType": "image/webp",
-                "size": 104857,
-                "width": 1024,
-                "height": 576
-              }
-            },
-            {
-              "type": "image",
-              "url": "https://cdn.example.edu/media/posts/hackathon-team.jpg",
-              "metadata": {
-                "r2Key": "users/4/posts/hackathon-team.jpg",
-                "contentType": "image/jpeg"
-              }
-            }
-          ],
-          "quotedPostId": 42,
-          "parentPostId": 41
         }
       },
       "Post": {
@@ -5210,6 +5398,135 @@
             "Content-Type": "image/webp"
           },
           "maxUploadBytes": 52428800
+        }
+      },
+      "PostAttachments": {
+        "type": "array",
+        "maxItems": 5,
+        "description": "Attach up to 5 images. If a GIF or video is included, it must be the only attachment. Include the `metadata.r2Key` issued by `/media/presign` so the backend can clean up objects.",
+        "items": {
+          "type": "object",
+          "required": [
+            "type",
+            "url"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "image",
+                "gif",
+                "video"
+              ]
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            },
+            "metadata": {
+              "type": "object",
+              "nullable": true,
+              "description": "Additional media information sent back by the storage presign endpoint.",
+              "properties": {
+                "r2Key": {
+                  "type": "string",
+                  "description": "Required: Cloudflare R2 object key for this file."
+                },
+                "contentType": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "size": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "width": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "height": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "duration": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "Duration in seconds for video/GIF uploads."
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "PostCreateStandard": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Trimmed text, max 2000 characters."
+          },
+          "attachments": {
+            "$ref": "#/components/schemas/PostAttachments"
+          }
+        },
+        "additionalProperties": false,
+        "example": {
+          "content": "Campus meetup tomorrow?",
+          "attachments": []
+        }
+      },
+      "RepostRequest": {
+        "type": "object",
+        "description": "Silent repost; no content or attachments allowed.",
+        "additionalProperties": false
+      },
+      "QuotePostCreate": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "nullable": true
+          },
+          "attachments": {
+            "$ref": "#/components/schemas/PostAttachments"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Quote post; content or attachments required. quotedPostId is taken from the path.",
+        "example": {
+          "content": "My take on this",
+          "attachments": []
+        }
+      },
+      "ReplyPostCreate": {
+        "type": "object",
+        "required": [
+          "content"
+        ],
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "attachments": {
+            "$ref": "#/components/schemas/PostAttachments"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Reply to a post; parentPostId comes from the path.",
+        "example": {
+          "content": "Thanks for sharing!",
+          "attachments": []
         }
       },
       "PostArchiveRequest": {

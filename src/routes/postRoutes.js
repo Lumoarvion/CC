@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
 import {
-  createPost,
+  createStandardPost,
+  repostPost,
+  quotePost,
+  replyPost,
   feed,
   likePost,
   unlikePost,
@@ -20,7 +23,10 @@ import {
 } from '../controllers/postController.js';
 
 const router = Router();
-router.post('/', authRequired, createPost);
+router.post('/', authRequired, createStandardPost);
+router.post('/:id/repost', authRequired, repostPost);
+router.post('/:id/quote', authRequired, quotePost);
+router.post('/:id/reply', authRequired, replyPost);
 router.get('/feed', authRequired, feed);
 router.get('/saved', authRequired, savedPosts);
 router.post('/:id/archive', authRequired, archivePost);

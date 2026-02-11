@@ -15,6 +15,75 @@ function ensureSchemas() {
   // Normalize SimpleOk
   spec.components.schemas.SimpleOk = { type: 'object', properties: { ok: { type: 'boolean' } }, example: { ok: true } };
 
+  // Post creation variants
+  spec.components.schemas.PostCreateStandard = {
+    type: 'object',
+    required: ['content'],
+    properties: {
+      content: { type: 'string', minLength: 1, maxLength: 2000, description: 'Trimmed text, max 2000 characters.' },
+      attachments: { $ref: '#/components/schemas/PostAttachments' },
+    },
+    additionalProperties: false,
+    example: { content: 'Campus meetup tomorrow?', attachments: [] },
+  };
+
+  spec.components.schemas.RepostRequest = {
+    type: 'object',
+    description: 'Silent repost; no content or attachments allowed.',
+    additionalProperties: false,
+  };
+
+  spec.components.schemas.QuotePostCreate = {
+    type: 'object',
+    properties: {
+      content: { type: 'string', minLength: 1, maxLength: 2000, nullable: true },
+      attachments: { $ref: '#/components/schemas/PostAttachments' },
+    },
+    additionalProperties: false,
+    description: 'Quote post; content or attachments required. quotedPostId is taken from the path.',
+    example: { content: 'My take on this', attachments: [] },
+  };
+
+  spec.components.schemas.ReplyPostCreate = {
+    type: 'object',
+    required: ['content'],
+    properties: {
+      content: { type: 'string', minLength: 1, maxLength: 2000 },
+      attachments: { $ref: '#/components/schemas/PostAttachments' },
+    },
+    additionalProperties: false,
+    description: 'Reply to a post; parentPostId comes from the path.',
+    example: { content: 'Thanks for sharing!', attachments: [] },
+  };
+
+  if (!spec.components.schemas.PostAttachments) {
+    spec.components.schemas.PostAttachments = {
+      type: 'array',
+      maxItems: 5,
+      items: {
+        type: 'object',
+        required: ['type', 'url'],
+        properties: {
+          type: { type: 'string', enum: ['image', 'gif', 'video'] },
+          url: { type: 'string', format: 'uri' },
+          metadata: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              r2Key: { type: 'string', description: 'Required: storage key from presign endpoint.' },
+              contentType: { type: 'string', nullable: true },
+              size: { type: 'integer', nullable: true },
+              width: { type: 'integer', nullable: true },
+              height: { type: 'integer', nullable: true },
+              duration: { type: 'number', nullable: true },
+            },
+          },
+        },
+      },
+      description: 'Attach up to 5 images; if gif/video is present it must be the only attachment.',
+    };
+  }
+
   // Canonical UserSummary (public profile, no email)
   spec.components.schemas.UserSummary = {
     type: 'object',
@@ -191,12 +260,53 @@ function addPostActions() {
   const postId = { name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'Post ID' };
   setOp('/posts', 'post', {
     tags: ['Posts'],
-    summary: 'Create post',
+    summary: 'Create standard post',
+    description: 'Create a normal post. quotedPostId and parentPostId are not allowed here.',
     security: bearer,
-    requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PostCreate' } } } },
+    requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/PostCreateStandard' } } } },
     responses: {
       201: { description: 'Created post', content: { 'application/json': { schema: { $ref: '#/components/schemas/Post' } } } },
       400: { description: 'Validation error' },
+    },
+  });
+
+  setOp('/posts/{id}/repost', 'post', {
+    tags: ['Posts'],
+    summary: 'Repost (silent share)',
+    description: 'Share an existing post without adding content or attachments.',
+    security: bearer,
+    parameters: [postId],
+    requestBody: { required: false, content: { 'application/json': { schema: { $ref: '#/components/schemas/RepostRequest' } } } },
+    responses: {
+      201: { description: 'Created repost', content: { 'application/json': { schema: { $ref: '#/components/schemas/Post' } } } },
+      400: { description: 'Validation error' },
+      404: { description: 'Quoted post not found' },
+    },
+  });
+
+  setOp('/posts/{id}/quote', 'post', {
+    tags: ['Posts'],
+    summary: 'Quote post (repost with commentary/media)',
+    security: bearer,
+    parameters: [postId],
+    requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/QuotePostCreate' } } } },
+    responses: {
+      201: { description: 'Created quote post', content: { 'application/json': { schema: { $ref: '#/components/schemas/Post' } } } },
+      400: { description: 'Validation error' },
+      404: { description: 'Quoted post not found' },
+    },
+  });
+
+  setOp('/posts/{id}/reply', 'post', {
+    tags: ['Posts'],
+    summary: 'Reply to a post',
+    security: bearer,
+    parameters: [postId],
+    requestBody: { required: true, content: { 'application/json': { schema: { $ref: '#/components/schemas/ReplyPostCreate' } } } },
+    responses: {
+      201: { description: 'Created reply', content: { 'application/json': { schema: { $ref: '#/components/schemas/Post' } } } },
+      400: { description: 'Validation error' },
+      404: { description: 'Parent post not found' },
     },
   });
 
