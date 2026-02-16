@@ -1378,7 +1378,7 @@
         "tags": [
           "Posts"
         ],
-        "summary": "Home feed",
+        "summary": "Home feed (follow-first, unseen-first, then recent discovery)",
         "security": [
           {
             "bearerAuth": []
@@ -4502,6 +4502,14 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "viewerHasSaved": {
+            "type": "boolean",
+            "description": "Whether the requesting user has saved/bookmarked the post."
+          },
+          "viewerHasSeen": {
+            "type": "boolean",
+            "description": "False when this response is the user's first view within the TTL window; true otherwise."
           }
         },
         "required": [
@@ -5207,13 +5215,32 @@
             "items": {
               "$ref": "#/components/schemas/Post"
             }
+          },
+          "prevPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
           "page",
           "limit",
           "count",
-          "posts"
+          "posts",
+          "prevPage",
+          "total",
+          "hasMore",
+          "remaining"
         ],
         "example": {
           "page": 1,
@@ -6050,6 +6077,56 @@
         "example": {
           "ok": true
         }
+      },
+      "UserFeedResponse": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "prevPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "nextPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hasMore": {
+            "type": "boolean"
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "": "#/components/schemas/Post"
+            }
+          }
+        },
+        "required": [
+          "page",
+          "limit",
+          "count",
+          "total",
+          "hasMore",
+          "posts"
+        ]
       }
     }
   },

@@ -6,10 +6,13 @@ import { normalizePostMediaInput, attachMediaToPost, serializeMedia, deleteMedia
 import { adjustPostStats, getPostStats, projectStats } from '../utils/postStats.js';
 import { trackViews } from '../utils/viewTracker.js';
 import { createNotification } from '../utils/notifications.js';
+import { orderBySeenFlag } from '../utils/feedOrder.js';
 
 const ADMIN_ROLE_KEYS = new Set([0, 1]);
 const MAX_POST_LENGTH = 2000;
 const MAX_POSTS_PER_MINUTE = 5;
+const FEED_DISCOVERY_MAX_AGE_HOURS = Number(process.env.FEED_DISCOVERY_MAX_AGE_HOURS || 72);
+const FEED_FETCH_CAP = 5000;
 
 function isAdmin(user) {
   if (!user) return false;
@@ -524,90 +527,81 @@ export const feed = async (req, res) => {
       uniqueActorCount: feedActorIds.length,
     });
 
-    const where = {
-      userId: { [Op.in]: feedActorIds },
-      isArchived: false,
-    };
+    const include = [
+      { model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] },
+      { model: AnnouncementType, as: 'announcementType', attributes: ['id', 'typeKey', 'displayName', 'description'] },
+      { model: PostMedia, as: 'media' },
+      { model: Post, as: 'quotedPost', include: [{ model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] }] },
+      { model: Post, as: 'parentPost', include: [{ model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] }] },
+      { model: PostStats, as: 'stats', attributes: ['postId', 'likeCount', 'commentCount', 'quoteCount', 'viewCount'] },
+    ];
+    const order = [
+      ['createdAt', 'DESC'],
+      ['id', 'DESC'],
+    ];
+
+    const needed = offset + limit;
+    const followedWhere = { userId: { [Op.in]: feedActorIds }, isArchived: false };
     const queryStartedAt = Date.now();
-    const [total, posts] = await Promise.all([
-      Post.count({ where }),
+    const [followedTotal, followedPostsRaw] = await Promise.all([
+      Post.count({ where: followedWhere }),
       Post.findAll({
-        where,
-        include: [
-          { model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] },
-          { model: AnnouncementType, as: 'announcementType', attributes: ['id', 'typeKey', 'displayName', 'description'] },
-          { model: PostMedia, as: 'media' },
-          { model: Post, as: 'quotedPost', include: [{ model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] }] },
-          { model: Post, as: 'parentPost', include: [{ model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] }] },
-          {
-            model: PostStats,
-            as: 'stats',
-            attributes: ['postId', 'likeCount', 'commentCount', 'quoteCount', 'viewCount'],
-          },
-        ],
-        order: [
-          ['pinnedUntil', 'DESC'],
-          ['createdAt', 'DESC'],
-        ],
-        limit,
-        offset,
+        where: followedWhere,
+        include,
+        order,
+        limit: Math.min(needed || limit, FEED_FETCH_CAP),
       }),
     ]);
-    const queryDurationMs = Date.now() - queryStartedAt;
+    const { posts: followedSerialized } = await serializePostsForViewer(followedPostsRaw, req.user.id);
+    const followedOrdered = orderBySeenFlag(followedSerialized);
 
-    const { posts: serialized, likedCount, savedCount, followingCount } = await serializePostsForViewer(posts, req.user.id);
-    logger.info('post.feed.viewer_flags_loaded', {
-      userId: req.user.id,
-      postCount: serialized.length,
-      viewerLikes: likedCount,
-      viewerSaves: savedCount,
-      viewerFollows: followingCount,
-    });
-    const returnedCount = serialized.length;
+    // Discovery (unfollowed recent)
+    const discoveryCutoff = new Date(Date.now() - FEED_DISCOVERY_MAX_AGE_HOURS * 3600 * 1000);
+    const discoveryWhere = {
+      userId: { [Op.notIn]: feedActorIds },
+      isArchived: false,
+      createdAt: { [Op.gte]: discoveryCutoff },
+    };
+    const needDiscovery = Math.max(0, offset + limit - followedTotal);
+    let discoveryTotal = 0;
+    let discoveryOrdered = [];
+    if (needDiscovery > 0 || offset >= followedTotal) {
+      discoveryTotal = await Post.count({ where: discoveryWhere });
+      const discoveryLimit = Math.min(Math.max(needDiscovery, limit), FEED_FETCH_CAP);
+      const discoveryRaw = await Post.findAll({
+        where: discoveryWhere,
+        include,
+        order,
+        limit: discoveryLimit,
+      });
+      const { posts: discoverySerialized } = await serializePostsForViewer(discoveryRaw, req.user.id);
+      discoveryOrdered = orderBySeenFlag(discoverySerialized);
+    } else {
+      discoveryTotal = await Post.count({ where: discoveryWhere });
+    }
+
+    const combined = [...followedOrdered, ...discoveryOrdered];
+    const total = followedTotal + discoveryTotal;
+    const pageItems = combined.slice(offset, offset + limit);
+    const returnedCount = pageItems.length;
     const hasMore = offset + returnedCount < total;
     const nextPage = hasMore ? page + 1 : null;
     const prevPage = page > 1 ? page - 1 : null;
     const remaining = Math.max(total - (offset + returnedCount), 0);
-    let nextCursor = null;
-    if (hasMore && serialized[returnedCount - 1]) {
-      try {
-        const cursorPayload = {
-          createdAt: serialized[returnedCount - 1].createdAt,
-          id: serialized[returnedCount - 1].id,
-        };
-        nextCursor = Buffer.from(JSON.stringify(cursorPayload)).toString('base64');
-      } catch {
-        nextCursor = null;
-      }
-    }
-    logger.info('post.feed.pagination_computed', {
-      userId: req.user.id,
-      page,
-      limit,
-      offset,
-      returnedCount,
-      total,
-      hasMore,
-      nextPage,
-      prevPage,
-      remaining,
-      nextCursor,
-    });
+
     logger.info('post.feed.success', {
       userId: req.user.id,
       page,
       count: returnedCount,
       limit,
-      durationMs: queryDurationMs,
-      statsIncluded: true,
-      viewerLikes: likedCount,
-      viewerSaves: savedCount,
-      viewerFollows: followingCount,
+      durationMs: Date.now() - queryStartedAt,
       hasMore,
       total,
       nextPage,
       prevPage,
       remaining,
+      followedTotal,
+      discoveryTotal,
     });
     return res.json({
       page,
@@ -617,9 +611,8 @@ export const feed = async (req, res) => {
       count: returnedCount,
       total,
       hasMore,
-      nextCursor,
       remaining,
-      posts: serialized,
+      posts: pageItems,
     });
   } catch (err) {
     logger.error('post.feed.error', { userId: req.user.id, error: err instanceof Error ? err.message : String(err) });
@@ -666,17 +659,20 @@ async function serializePostsForViewer(posts, viewerId, { forceSaved = false } =
     includeSaves: !forceSaved,
   });
   const viewIncrements = await trackViews({ viewerId, postIds: posts.map((p) => p.id) });
-  const incrementSet = new Set(viewIncrements || []);
+  const firstSeenSet = new Set(viewIncrements || []); // ids first seen on this request
   return {
     likedCount: likedPostIds.size,
     savedCount: savedPostIds.size,
     followingCount: followingAuthorIds.size,
+    firstSeenIds: Array.from(firstSeenSet),
     posts: posts.map((post) => {
       const plain = toPlainPost(post);
+      const firstSeen = firstSeenSet.has(post.id);
+      plain.viewerHasSeen = !firstSeen;
       plain.viewerHasLiked = likedPostIds.has(post.id);
       plain.viewerHasSaved = forceSaved ? true : savedPostIds.has(post.id);
       plain.viewerFollowsAuthor = followingAuthorIds.has(post.userId);
-      if (incrementSet.has(post.id)) {
+      if (firstSeen) {
         plain.viewCount = (plain.viewCount || 0) + 1;
         adjustPostStats(post.id, { viewDelta: 1 }).catch(() => {});
       }
