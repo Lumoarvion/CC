@@ -904,8 +904,8 @@ autogen(outputFile, endpointsFiles, doc)
         }
       });
       ensure('/posts/feed', 'get', {
-        summary: 'Fetch feed',
-        description: 'Returns the authenticated user\'s feed, comprised of their posts and posts from accounts they follow. Archived posts are excluded and results are sorted by `pinnedUntil` then `createdAt`.',
+        summary: 'Home feed',
+        description: 'Returns a single paginated home feed ordered as: active announcements first (capped), followed-users unseen posts, discovery unseen posts, followed-users seen posts, then discovery seen posts. Archived posts are excluded; discovery pulls from recent unfollowed standard posts.',
         responses: {
           200: {
             description: 'Feed page',
@@ -1139,16 +1139,64 @@ autogen(outputFile, endpointsFiles, doc)
         type: 'object',
         properties: {
           page: { type: 'integer', minimum: 1 },
+          prevPage: { type: 'integer', nullable: true },
+          nextPage: { type: 'integer', nullable: true },
           limit: { type: 'integer', minimum: 1 },
           count: { type: 'integer', minimum: 0 },
+          total: { type: 'integer', minimum: 0 },
+          hasMore: { type: 'boolean' },
+          remaining: { type: 'integer', minimum: 0 },
           posts: { type: 'array', items: { $ref: '#/components/schemas/Post' } }
         },
-        required: ['page', 'limit', 'count', 'posts'],
+        required: ['page', 'limit', 'count', 'total', 'hasMore', 'posts'],
         example: {
           page: 1,
+          prevPage: null,
+          nextPage: 2,
           limit: 10,
           count: 2,
+          total: 5,
+          hasMore: true,
+          remaining: 3,
           posts: [
+            {
+              id: 900,
+              content: 'Campus closed tomorrow due to maintenance.',
+              postType: 'announcement',
+              pinnedUntil: '2026-03-01T12:00:00.000Z',
+              audienceScope: { target: { scope: 'global' }, interests: ['announcement:general'] },
+              mentions: [],
+              hashtags: [],
+              urls: [],
+              media: [],
+              announcementTypeId: 2,
+              announcementType: {
+                id: 2,
+                typeKey: 'campus_notice',
+                displayName: 'Campus Notice',
+                description: null
+              },
+              userId: 1,
+              user: {
+                id: 1,
+                fullName: 'Admin',
+                username: 'admin',
+                avatarUrl: null,
+                avatarUrlFull: null,
+                avatarInitial: 'A'
+              },
+              isArchived: false,
+              likeCount: 0,
+              commentCount: 0,
+              quoteCount: 0,
+              viewCount: 15,
+              viewerHasSeen: false,
+              viewerHasLiked: false,
+              viewerHasSaved: false,
+              viewerFollowsAuthor: false,
+              createdAt: '2026-02-28T08:30:00.000Z',
+              updatedAt: '2026-02-28T08:30:00.000Z'
+            },
             {
               id: 123,
               content: 'Excited for the #Hackathon with @superadmin!',

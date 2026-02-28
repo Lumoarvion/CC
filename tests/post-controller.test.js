@@ -1,7 +1,7 @@
 import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPost } from '../src/controllers/postController.js';
-import { Post, User } from '../src/models/index.js';
+import { createPost, repostPost } from '../src/controllers/postController.js';
+import { Post, User, PostStats } from '../src/models/index.js';
 import { logger } from '../src/utils/logger.js';
 
 const originals = {
@@ -10,6 +10,8 @@ const originals = {
   findByPk: Post.findByPk,
   create: Post.create,
   userFindByPk: User.findByPk,
+  postStatsFindOne: PostStats.findOne,
+  postStatsFindOrCreate: PostStats.findOrCreate,
   loggerInfo: logger.info,
   loggerError: logger.error,
 };
@@ -20,6 +22,8 @@ function resetStubs() {
   Post.findByPk = originals.findByPk;
   Post.create = originals.create;
   User.findByPk = originals.userFindByPk;
+  PostStats.findOne = originals.postStatsFindOne;
+  PostStats.findOrCreate = originals.postStatsFindOrCreate;
   logger.info = originals.loggerInfo;
   logger.error = originals.loggerError;
 }
@@ -46,6 +50,25 @@ function baseUser() {
 beforeEach(() => {
   logger.info = () => {};
   logger.error = () => {};
+  PostStats.findOne = async () => null;
+  PostStats.findOrCreate = async ({ where }) => [
+    {
+      postId: where.postId,
+      likeCount: 0,
+      commentCount: 0,
+      quoteCount: 0,
+      viewCount: 0,
+      toJSON() {
+        return {
+          postId: where.postId,
+          likeCount: 0,
+          commentCount: 0,
+          quoteCount: 0,
+          viewCount: 0,
+        };
+      },
+    },
+  ];
 });
 
 afterEach(() => {
@@ -134,10 +157,10 @@ test('createPost rejects duplicate content', async () => {
 });
 
 test('createPost validates quotedPostId type', async () => {
-  const req = { body: { content: 'hello', quotedPostId: 'abc' }, user: baseUser() };
+  const req = { params: { id: 'abc' }, body: {}, user: baseUser() };
   const res = mockRes();
 
-  await createPost(req, res);
+  await repostPost(req, res);
 
   assert.equal(res.statusCode, 400);
   assert.deepEqual(res.payload, { message: 'invalid quotedPostId' });
@@ -145,22 +168,12 @@ test('createPost validates quotedPostId type', async () => {
 
 test('createPost returns 404 when quoted post missing', async () => {
   Post.count = async () => 0;
-  let duplicateCheck = true;
-  Post.findOne = async (query) => {
-    if (duplicateCheck && query?.order) {
-      duplicateCheck = false;
-      return null;
-    }
-    if (query?.where?.id === 999) {
-      return null;
-    }
-    return null;
-  };
+  Post.findOne = async () => null;
 
-  const req = { body: { content: 'hello', quotedPostId: 999 }, user: baseUser() };
+  const req = { params: { id: '999' }, body: {}, user: baseUser() };
   const res = mockRes();
 
-  await createPost(req, res);
+  await repostPost(req, res);
 
   assert.equal(res.statusCode, 404);
   assert.deepEqual(res.payload, { message: 'quoted post not found' });

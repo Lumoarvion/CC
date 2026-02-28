@@ -1,15 +1,16 @@
 import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { Op } from 'sequelize';
 import { feed } from '../src/controllers/postController.js';
-import { Post, Follow, User, Like, Comment } from '../src/models/index.js';
+import { Post, Follow, Like, PostSave } from '../src/models/index.js';
 import { logger } from '../src/utils/logger.js';
 
 const originalFns = {
   postFindAll: Post.findAll,
+  postCount: Post.count,
   followFindAll: Follow.findAll,
-  userFindByPk: User.findByPk,
   likeFindAll: Like.findAll,
-  commentFindAll: Comment.findAll,
+  postSaveFindAll: PostSave.findAll,
   loggerInfo: logger.info,
   loggerError: logger.error,
 };
@@ -17,14 +18,16 @@ const originalFns = {
 beforeEach(() => {
   logger.info = () => {};
   logger.error = () => {};
+  Like.findAll = async () => [];
+  PostSave.findAll = async () => [];
 });
 
 afterEach(() => {
   Post.findAll = originalFns.postFindAll;
+  Post.count = originalFns.postCount;
   Follow.findAll = originalFns.followFindAll;
-  User.findByPk = originalFns.userFindByPk;
   Like.findAll = originalFns.likeFindAll;
-  Comment.findAll = originalFns.commentFindAll;
+  PostSave.findAll = originalFns.postSaveFindAll;
   logger.info = originalFns.loggerInfo;
   logger.error = originalFns.loggerError;
 });
@@ -45,8 +48,8 @@ function createRes() {
 }
 
 function buildPostData(id, overrides = {}) {
-  const createdAt = overrides.createdAt ?? '2025-11-08T10:00:00.000Z';
-  return {
+  const createdAt = overrides.createdAt ?? '2026-02-28T10:00:00.000Z';
+  const plain = {
     id,
     content: overrides.content ?? `post-${id}`,
     postType: overrides.postType ?? 'standard',
@@ -66,170 +69,160 @@ function buildPostData(id, overrides = {}) {
       id: overrides.userId ?? id,
       fullName: overrides.fullName ?? `User ${id}`,
       username: overrides.username ?? `user${id}`,
+      avatarUrl: overrides.avatarUrl ?? null,
+      avatarUrlFull: overrides.avatarUrlFull ?? null,
+    },
+    stats: overrides.stats ?? {
+      postId: id,
+      likeCount: 0,
+      commentCount: 0,
+      quoteCount: 0,
+      viewCount: 0,
     },
     createdAt,
     updatedAt: overrides.updatedAt ?? createdAt,
   };
+  return plain;
 }
 
 function clonePost(post) {
-  if (!post) return post;
   const plain = JSON.parse(JSON.stringify(post));
-  const instance = { ...plain };
-  instance.toJSON = () => ({ ...plain });
-  return instance;
+  return {
+    ...plain,
+    toJSON() {
+      return { ...plain };
+    },
+  };
 }
 
-function cloneScopes(scopes = []) {
-  return scopes.map((scope) => ({
-    audienceScope: scope?.audienceScope ? JSON.parse(JSON.stringify(scope.audienceScope)) : undefined,
-  }));
+function hasOp(whereValue, op) {
+  return Object.getOwnPropertySymbols(whereValue || {}).includes(op);
 }
 
-function takePosts(list = [], limit) {
-  if (!Array.isArray(list) || list.length === 0) return [];
-  const slice = list.slice(0, typeof limit === 'number' && limit > 0 ? limit : list.length);
-  return slice.map(clonePost);
-}
+function setupScenario({ followingIds = [], announcements = [], followedPosts = [], discoveryPosts = [] }) {
+  Follow.findAll = async () => followingIds.map((followingId) => ({ followingId }));
 
-function isAudienceScopeQuery(query) {
-  return Array.isArray(query?.attributes) && query.attributes.includes('audienceScope');
-}
+  Post.count = async ({ where } = {}) => {
+    if (where?.postType === 'announcement') return announcements.length;
+    if (where?.postType === 'standard' && hasOp(where?.userId, Op.in)) return followedPosts.length;
+    if (where?.postType === 'standard' && hasOp(where?.userId, Op.notIn)) return discoveryPosts.length;
+    return 0;
+  };
 
-function setupPostFindAllStub(scenario) {
-  Post.findAll = async (query = {}) => {
-    if (isAudienceScopeQuery(query)) {
-      if (query.where && Object.prototype.hasOwnProperty.call(query.where, 'id')) {
-        return cloneScopes(scenario.interactionScopes);
-      }
-      if (query.where && Object.prototype.hasOwnProperty.call(query.where, 'userId')) {
-        return cloneScopes(scenario.authoredScopes);
-      }
-    }
-
-    if (query.where?.postType === 'announcement') {
-      return takePosts(scenario.announcements, query.limit);
-    }
-
-    if (query.include && query.where?.userId) {
-      return takePosts(scenario.followPosts, query.limit);
-    }
-
-    const primaryInclude = Array.isArray(query.include) ? query.include[0] : undefined;
-    const includeWhere = primaryInclude?.where || {};
-    if (includeWhere.departmentId !== undefined) {
-      return takePosts(scenario.departmentPosts, query.limit);
-    }
-    if (includeWhere.degreeId !== undefined) {
-      return takePosts(scenario.degreePosts, query.limit);
-    }
-
-    if (query.where?.postType === 'standard') {
-      return takePosts(scenario.interestPool, query.limit);
-    }
-
+  Post.findAll = async ({ where, limit } = {}) => {
+    if (where?.postType === 'announcement') return announcements.slice(0, limit).map(clonePost);
+    if (where?.postType === 'standard' && hasOp(where?.userId, Op.in)) return followedPosts.slice(0, limit).map(clonePost);
+    if (where?.postType === 'standard' && hasOp(where?.userId, Op.notIn)) return discoveryPosts.slice(0, limit).map(clonePost);
     return [];
   };
 }
 
-test('feed aggregates follow + interest posts and returns announcements separately', async () => {
-  const scenario = {
-    interactionScopes: [{ audienceScope: { target: { scope: 'profile' }, interests: ['topic:events'] } }],
-    authoredScopes: [],
-    followPosts: [
-      buildPostData(10, {
-        createdAt: '2025-11-08T10:00:00.000Z',
-        audienceScope: { target: { scope: 'profile' }, interests: ['topic:events'] },
-      }),
-      buildPostData(11, {
-        createdAt: '2025-11-08T09:00:00.000Z',
-        audienceScope: { target: { scope: 'profile' }, interests: ['department:7'] },
-      }),
+async function runFeed({ page = '1', limit = '10', userId = 1 }) {
+  const req = { query: { page, limit }, user: { id: userId } };
+  const res = createRes();
+  await feed(req, res);
+  return res;
+}
+
+test('feed orders posts as announcements then followed unseen then discovery unseen then followed seen then discovery seen', async () => {
+  setupScenario({
+    followingIds: [2],
+    followedPosts: [
+      buildPostData(1310, { userId: 2, createdAt: '2026-02-28T09:00:00.000Z' }),
     ],
-    interestPool: [
-      buildPostData(30, {
-        createdAt: '2025-11-08T08:00:00.000Z',
-        audienceScope: { target: { scope: 'profile' }, interests: ['topic:events'] },
-      }),
-      buildPostData(31, {
-        createdAt: '2025-11-08T07:00:00.000Z',
-        audienceScope: { target: { scope: 'profile' }, interests: ['topic:sports'] },
-      }),
+    discoveryPosts: [
+      buildPostData(1510, { userId: 9, createdAt: '2026-02-28T08:00:00.000Z' }),
     ],
-    departmentPosts: [buildPostData(40)],
-    degreePosts: [buildPostData(50)],
+  });
+  await runFeed({ limit: '10' });
+
+  setupScenario({
+    followingIds: [2],
     announcements: [
-      buildPostData(500, {
+      buildPostData(1100, {
         postType: 'announcement',
-        pinnedUntil: '2025-11-10T12:00:00.000Z',
+        userId: 50,
+        pinnedUntil: '2026-03-05T12:00:00.000Z',
         announcementTypeId: 3,
         announcementType: { id: 3, typeKey: 'campus_notice', displayName: 'Campus Notice', description: null },
-        audienceScope: { target: { scope: 'global' }, interests: ['announcement:general'] },
       }),
     ],
-  };
+    followedPosts: [
+      buildPostData(1300, { userId: 2, createdAt: '2026-02-28T10:00:00.000Z' }),
+      buildPostData(1310, { userId: 2, createdAt: '2026-02-28T09:00:00.000Z' }),
+    ],
+    discoveryPosts: [
+      buildPostData(1500, { userId: 9, createdAt: '2026-02-28T08:00:00.000Z' }),
+      buildPostData(1510, { userId: 10, createdAt: '2026-02-28T07:00:00.000Z' }),
+    ],
+  });
 
-  setupPostFindAllStub(scenario);
-  Follow.findAll = async () => [{ followingId: 2 }];
-  User.findByPk = async () => ({ id: 1, departmentId: 7, degreeId: 3 });
-  Like.findAll = async () => [{ postId: 999 }];
-  Comment.findAll = async () => [];
-
-  const req = { query: { limit: '3' }, user: { id: 1 } };
-  const res = createRes();
-
-  await feed(req, res);
+  const res = await runFeed({ limit: '10' });
 
   assert.equal(res.statusCode, 200);
-  assert.equal(res.body.limit, 3);
-  assert.equal(res.body.count, 3);
-  assert.deepEqual(res.body.posts.map((post) => post.id), [10, 11, 30]);
-  assert.equal(res.body.announcements.length, 1);
-  assert.equal(res.body.announcements[0].postType, 'announcement');
+  assert.deepEqual(res.body.posts.map((post) => post.id), [1100, 1300, 1500, 1310, 1510]);
+  assert.equal(res.body.total, 5);
+  assert.equal(res.body.hasMore, false);
 });
 
-test('feed falls back to department and degree posts and paginates by offset', async () => {
-  const scenario = {
-    interactionScopes: [],
-    authoredScopes: [],
-    followPosts: [
-      buildPostData(200, { createdAt: '2025-11-08T08:00:00.000Z' }),
+test('feed paginates across announcement and seen-unseen bucket boundaries', async () => {
+  setupScenario({
+    followingIds: [2],
+    followedPosts: [
+      buildPostData(2410, { userId: 2, createdAt: '2026-02-28T09:00:00.000Z' }),
     ],
-    interestPool: [],
-    departmentPosts: [
-      buildPostData(210, { createdAt: '2025-11-07T05:00:00.000Z', audienceScope: { target: { scope: 'profile' }, interests: ['department:10'] } }),
+    discoveryPosts: [
+      buildPostData(2510, { userId: 9, createdAt: '2026-02-28T08:00:00.000Z' }),
     ],
-    degreePosts: [
-      buildPostData(220, { createdAt: '2025-11-06T05:00:00.000Z', audienceScope: { target: { scope: 'profile' }, interests: ['degree:5'] } }),
-      buildPostData(221, { createdAt: '2025-11-05T05:00:00.000Z', audienceScope: { target: { scope: 'profile' }, interests: ['degree:5'] } }),
-      buildPostData(222, { createdAt: '2025-11-04T05:00:00.000Z', audienceScope: { target: { scope: 'profile' }, interests: ['degree:5'] } }),
-    ],
+  });
+  await runFeed({ limit: '10' });
+
+  setupScenario({
+    followingIds: [2],
     announcements: [
-      buildPostData(700, {
+      buildPostData(2100, {
         postType: 'announcement',
-        pinnedUntil: '2025-12-01T00:00:00.000Z',
+        userId: 50,
+        pinnedUntil: '2026-03-05T12:00:00.000Z',
         announcementTypeId: 5,
         announcementType: { id: 5, typeKey: 'safety', displayName: 'Safety', description: null },
-        audienceScope: { target: { scope: 'global' }, interests: ['announcement:general'] },
       }),
     ],
-  };
+    followedPosts: [
+      buildPostData(2400, { userId: 2, createdAt: '2026-02-28T10:00:00.000Z' }),
+      buildPostData(2410, { userId: 2, createdAt: '2026-02-28T09:00:00.000Z' }),
+    ],
+    discoveryPosts: [
+      buildPostData(2500, { userId: 9, createdAt: '2026-02-28T08:00:00.000Z' }),
+      buildPostData(2510, { userId: 10, createdAt: '2026-02-28T07:00:00.000Z' }),
+    ],
+  });
 
-  setupPostFindAllStub(scenario);
-  Follow.findAll = async () => [];
-  User.findByPk = async () => ({ id: 1, departmentId: 10, degreeId: 5 });
-  Like.findAll = async () => [];
-  Comment.findAll = async () => [];
-
-  const req = { query: { page: '2', limit: '2' }, user: { id: 1 } };
-  const res = createRes();
-
-  await feed(req, res);
+  const res = await runFeed({ page: '2', limit: '2' });
 
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.page, 2);
-  assert.equal(res.body.limit, 2);
+  assert.equal(res.body.prevPage, 1);
+  assert.equal(res.body.nextPage, 3);
   assert.equal(res.body.count, 2);
-  assert.deepEqual(res.body.posts.map((post) => post.id), [220, 221]);
-  assert.equal(res.body.announcements.length, 1);
+  assert.equal(res.body.remaining, 1);
+  assert.deepEqual(res.body.posts.map((post) => post.id), [2500, 2410]);
+});
+
+test('feed caps active announcements before counting and returning the combined list', async () => {
+  setupScenario({
+    announcements: [
+      buildPostData(3100, { postType: 'announcement', userId: 50, pinnedUntil: '2026-03-07T12:00:00.000Z', announcementTypeId: 1, announcementType: { id: 1, typeKey: 'a', displayName: 'A', description: null } }),
+      buildPostData(3101, { postType: 'announcement', userId: 50, pinnedUntil: '2026-03-06T12:00:00.000Z', announcementTypeId: 1, announcementType: { id: 1, typeKey: 'a', displayName: 'A', description: null } }),
+      buildPostData(3102, { postType: 'announcement', userId: 50, pinnedUntil: '2026-03-05T12:00:00.000Z', announcementTypeId: 1, announcementType: { id: 1, typeKey: 'a', displayName: 'A', description: null } }),
+      buildPostData(3103, { postType: 'announcement', userId: 50, pinnedUntil: '2026-03-04T12:00:00.000Z', announcementTypeId: 1, announcementType: { id: 1, typeKey: 'a', displayName: 'A', description: null } }),
+    ],
+  });
+
+  const res = await runFeed({ limit: '10' });
+
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(res.body.posts.map((post) => post.id), [3100, 3101, 3102]);
+  assert.equal(res.body.count, 3);
+  assert.equal(res.body.total, 3);
 });

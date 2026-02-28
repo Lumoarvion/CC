@@ -35,48 +35,56 @@
   "paths": {
     "/health": {
       "get": {
-        "description": "GET /health",
+        "description": "",
         "responses": {
           "200": {
             "description": "OK"
           }
-        },
-        "summary": "GET /health"
+        }
       }
     },
     "/admins": {
       "post": {
-        "description": "POST /admins",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "POST /admins"
+        }
       }
     },
     "/departments/internal": {
       "get": {
-        "description": "GET /departments/internal",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /departments/internal"
+        }
       }
     },
     "/users/{id}": {
       "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "Get user profile",
-        "description": "Returns public profile payload including counts and pinnedPostIds.",
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserSummary"
+                }
+              }
+            }
+          }
+        },
         "security": [
           {
             "bearerAuth": []
           }
+        ],
+        "tags": [
+          "Users"
         ],
         "parameters": [
           {
@@ -88,25 +96,10 @@
             },
             "description": "User ID"
           }
-        ],
-        "responses": {
-          "200": {
-            "description": "Profile",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserSummary"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
+        ]
       },
       "delete": {
-        "description": "DELETE /users/{id}",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
@@ -118,9 +111,8 @@
           }
         ],
         "tags": [
-          "Profile"
-        ],
-        "summary": "DELETE /users/{id}"
+          "Users"
+        ]
       }
     },
     "/announcements": {
@@ -172,44 +164,40 @@
     },
     "/announcements/{id}": {
       "patch": {
-        "description": "PATCH /announcements/{id}",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "PATCH /announcements/{id}"
+        }
       },
       "delete": {
-        "description": "DELETE /announcements/{id}",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "DELETE /announcements/{id}"
+        }
       }
     },
     "/announcements/{id}/archive": {
       "post": {
-        "description": "POST /announcements/{id}/archive",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "POST /announcements/{id}/archive"
+        }
       }
     },
     "/announcements/{id}/restore": {
       "post": {
-        "description": "POST /announcements/{id}/restore",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "POST /announcements/{id}/restore"
+        }
       }
     },
     "/auth/register": {
@@ -412,7 +400,7 @@
     },
     "/auth/login": {
       "post": {
-        "description": "Login with email/username and password",
+        "description": "",
         "responses": {
           "200": {
             "description": "OK",
@@ -467,7 +455,7 @@
     },
     "/auth/request-otp": {
       "post": {
-        "description": "Request OTP to email",
+        "description": "",
         "responses": {
           "200": {
             "description": "OTP sent",
@@ -588,7 +576,7 @@
     },
     "/auth/verify-otp": {
       "post": {
-        "description": "Verify OTP code",
+        "description": "",
         "responses": {
           "200": {
             "description": "Verified",
@@ -772,107 +760,67 @@
     },
     "/users/me": {
       "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "Get current user profile",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "description": "",
         "responses": {
           "200": {
-            "description": "Profile",
+            "description": "OK",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserSelf"
+                  "$ref": "#/components/schemas/UserSummary"
                 }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "Update profile fields",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "fullName": {
-                    "type": "string"
-                  },
-                  "bio": {
-                    "type": "string"
-                  },
-                  "website": {
-                    "type": "string"
-                  },
-                  "location": {
-                    "type": "string"
-                  },
-                  "bannerUrl": {
-                    "type": "string"
-                  },
-                  "isPrivate": {
-                    "type": "boolean"
-                  },
-                  "isLimited": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false
               }
             }
           }
         },
-        "responses": {
-          "200": {
-            "description": "Updated profile",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "boolean"
-                    },
-                    "profile": {
-                      "$ref": "#/components/schemas/UserSelf"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "No fields provided"
-          }
-        }
-      }
-    },
-    "/users/me/avatar": {
-      "post": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "Upload avatar",
         "security": [
           {
             "bearerAuth": []
           }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me/avatar": {
+      "post": {
+        "description": "",
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarUpdateResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
         ],
         "requestBody": {
           "required": true,
@@ -892,36 +840,13 @@
               }
             }
           }
-        },
-        "responses": {
-          "200": {
-            "description": "Avatar updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AvatarUpdateResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "No file uploaded"
-          }
         }
       },
       "delete": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "Delete avatar",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "description": "",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Deleted",
             "content": {
               "application/json": {
                 "schema": {
@@ -930,7 +855,15 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
       }
     },
     "/users/me/delete-request": {
@@ -1167,76 +1100,70 @@
     },
     "/{id}/followers": {
       "get": {
-        "description": "GET /{id}/followers",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /{id}/followers"
+        }
       }
     },
     "/{id}/following": {
       "get": {
-        "description": "GET /{id}/following",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /{id}/following"
+        }
       }
     },
     "/{id}/posts": {
       "get": {
-        "description": "GET /{id}/posts",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /{id}/posts"
+        }
       }
     },
     "/{id}/replies": {
       "get": {
-        "description": "GET /{id}/replies",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /{id}/replies"
+        }
       }
     },
     "/{id}/media": {
       "get": {
-        "description": "GET /{id}/media",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /{id}/media"
+        }
       }
     },
     "/{id}/likes": {
       "get": {
-        "description": "GET /{id}/likes",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "GET /{id}/likes"
+        }
       }
     },
     "/users/{id}/follow": {
       "post": {
         "tags": [
-          "Profile"
+          "Users"
         ],
-        "summary": "Follow user",
+        "summary": "Follow a user",
         "security": [
           {
             "bearerAuth": []
@@ -1250,7 +1177,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "User ID"
+            "description": "User ID to follow"
           }
         ],
         "responses": {
@@ -1263,14 +1190,20 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "404": {
+            "description": "User not found"
           }
         }
       },
       "delete": {
         "tags": [
-          "Profile"
+          "Users"
         ],
-        "summary": "Unfollow user",
+        "summary": "Unfollow a user",
         "security": [
           {
             "bearerAuth": []
@@ -1284,7 +1217,7 @@
             "schema": {
               "type": "integer"
             },
-            "description": "User ID"
+            "description": "User ID to unfollow"
           }
         ],
         "responses": {
@@ -1303,282 +1236,437 @@
     },
     "/posts": {
       "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Create standard post",
-        "description": "Create a normal post. quotedPostId and parentPostId are not allowed here.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/PostCreateStandard"
-              }
-            }
-          }
-        },
+        "description": "Creates a standard post for the authenticated user. Content is trimmed and deduplicated against the most recent post. Include the `metadata.r2Key` from `/media/presign` so media objects can be cleaned up if a post is edited or deleted. Set `quotedPostId` to reshare another post (omit `content`/attachments for a silent repost or include them for a quote post) and `parentPostId` to start a threaded reply.",
         "responses": {
           "201": {
-            "description": "Created post",
+            "description": "Created",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Post"
+                },
+                "example": {
+                  "id": 123,
+                  "content": "Excited for the #Hackathon with @superadmin!",
+                  "postType": "standard",
+                  "audienceScope": {
+                    "target": {
+                      "scope": "profile"
+                    },
+                    "interests": [
+                      "topic:events",
+                      "department:1"
+                    ]
+                  },
+                  "mentions": [
+                    "superadmin"
+                  ],
+                  "hashtags": [
+                    "hackathon"
+                  ],
+                  "urls": [
+                    "https://example.edu/events/hack"
+                  ],
+                  "media": [
+                    {
+                      "id": 1,
+                      "type": "image",
+                      "url": "https://cdn.example.edu/media/posts/hackathon-poster.webp",
+                      "metadata": {
+                        "r2Key": "users/4/posts/hackathon-poster.webp",
+                        "contentType": "image/webp",
+                        "size": 104857,
+                        "width": 1024,
+                        "height": 576,
+                        "order": 0
+                      }
+                    }
+                  ],
+                  "quotedPostId": null,
+                  "parentPostId": null,
+                  "isArchived": false,
+                  "announcementTypeId": null,
+                  "userId": 4,
+                  "user": {
+                    "id": 4,
+                    "fullName": "Ava Admin",
+                    "username": "ava.admin"
+                  },
+                  "createdAt": "2025-10-06T17:00:00.000Z",
+                  "updatedAt": "2025-10-06T17:00:00.000Z"
                 }
               }
             }
           },
           "400": {
-            "description": "Validation error"
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "lengthExceeded": {
+                    "summary": "Content too long",
+                    "value": {
+                      "message": "content exceeds 2000 characters"
+                    }
+                  },
+                  "mediaRule": {
+                    "summary": "Attachment rule violated",
+                    "value": {
+                      "message": "video posts may include only one attachment"
+                    }
+                  },
+                  "invalidQuoted": {
+                    "summary": "Referenced post is archived or missing",
+                    "value": {
+                      "message": "quoted post not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missing": {
+                    "value": {
+                      "message": "Missing token"
+                    }
+                  },
+                  "invalid": {
+                    "value": {
+                      "message": "Invalid or expired token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Account disabled"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Referenced post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "parent post not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate content",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Duplicate content detected"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Too many posts, try again in a minute"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to create post"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Create a post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PostCreate"
+              },
+              "example": {
+                "content": "Excited for the #Hackathon with @superadmin!",
+                "attachments": [
+                  {
+                    "type": "image",
+                    "url": "https://cdn.example.edu/media/posts/hackathon-poster.webp",
+                    "metadata": {
+                      "r2Key": "users/4/posts/hackathon-poster.webp",
+                      "contentType": "image/webp",
+                      "size": 104857,
+                      "width": 1024,
+                      "height": 576
+                    }
+                  }
+                ]
+              }
+            }
           }
         }
       }
     },
     "/{id}/repost": {
       "post": {
-        "description": "POST /{id}/repost",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
-          }
-        },
-        "summary": "POST /{id}/repost"
-      }
-    },
-    "/{id}/quote": {
-      "post": {
-        "description": "POST /{id}/quote",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "POST /{id}/quote"
-      }
-    },
-    "/{id}/reply": {
-      "post": {
-        "description": "POST /{id}/reply",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "POST /{id}/reply"
-      }
-    },
-    "/posts/feed": {
-      "get": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Home feed (follow-first, unseen-first, then recent discovery)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserFeedResponse"
-                }
-              }
-            }
           }
         }
       }
     },
-    "/saved": {
+    "/{id}/quote": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/{id}/reply": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/posts/feed": {
       "get": {
-        "description": "GET /saved",
+        "description": "Returns a single paginated home feed ordered as: active announcements first (capped), followed-users unseen posts, discovery unseen posts, followed-users seen posts, then discovery seen posts. Archived posts are excluded; discovery pulls from recent unfollowed standard posts.",
         "responses": {
-          "default": {
-            "description": ""
+          "200": {
+            "description": "Feed page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostFeedResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to load feed"
+                }
+              }
+            }
           }
         },
-        "summary": "GET /saved"
-      }
-    },
-    "/{id}/archive": {
-      "post": {
-        "description": "POST /{id}/archive",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "POST /{id}/archive"
-      }
-    },
-    "/{id}/restore": {
-      "post": {
-        "description": "POST /{id}/restore",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "POST /{id}/restore"
-      }
-    },
-    "/posts/{id}/like": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Like a post",
         "security": [
           {
             "bearerAuth": []
           }
         ],
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Home feed",
         "parameters": [
           {
-            "name": "id",
-            "in": "path",
-            "required": true,
+            "name": "page",
+            "in": "query",
+            "required": false,
             "schema": {
-              "type": "integer"
+              "type": "integer",
+              "minimum": 1
             },
-            "description": "Post ID"
+            "description": "Page number (default 1)"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50
+            },
+            "description": "Items per page (default 10, max 50)"
           }
-        ],
+        ]
+      }
+    },
+    "/saved": {
+      "get": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/{id}/archive": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/{id}/restore": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/posts/{id}/like": {
+      "post": {
+        "description": "Adds a like from the current user. The operation is idempotent; repeating it keeps the post liked.",
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "Liked",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Ok"
+                  "$ref": "#/components/schemas/PostEngagementResponse"
+                },
+                "example": {
+                  "ok": true,
+                  "likeCount": 12,
+                  "viewerHasLiked": true
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid id"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Unlike a post",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
+            "description": "Invalid post id",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Ok"
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "invalid post id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Account disabled"
                 }
               }
             }
           },
           "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
-    "/{id}/save": {
-      "post": {
-        "description": "POST /{id}/save",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "POST /{id}/save"
-      },
-      "delete": {
-        "description": "DELETE /{id}/save",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "DELETE /{id}/save"
-      }
-    },
-    "/{id}/pin": {
-      "post": {
-        "description": "POST /{id}/pin",
-        "responses": {
-          "default": {
-            "description": ""
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to like post"
+                }
+              }
+            }
           }
         },
-        "summary": "POST /{id}/pin"
-      },
-      "delete": {
-        "description": "DELETE /{id}/pin",
-        "responses": {
-          "default": {
-            "description": ""
-          }
-        },
-        "summary": "DELETE /{id}/pin"
-      }
-    },
-    "/posts/{id}/comments": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Add comment",
         "security": [
           {
             "bearerAuth": []
           }
+        ],
+        "tags": [
+          "Posts"
         ],
         "parameters": [
           {
@@ -1591,16 +1679,140 @@
             "description": "Post ID"
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CommentCreate"
+        "summary": "Like a post"
+      },
+      "delete": {
+        "description": "Removes the user's like. Returns `ok: true` even if the post was not previously liked.",
+        "responses": {
+          "200": {
+            "description": "Unliked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostEngagementResponse"
+                },
+                "example": {
+                  "ok": true,
+                  "likeCount": 11,
+                  "viewerHasLiked": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid post id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "invalid post id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Account disabled"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to unlike post"
+                }
               }
             }
           }
         },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Posts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Post ID"
+          }
+        ],
+        "summary": "Unlike a post"
+      }
+    },
+    "/{id}/save": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/{id}/pin": {
+      "post": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/posts/{id}/comments": {
+      "post": {
+        "description": "Adds a text comment to the specified post. Content is trimmed and limited to 2000 characters.",
         "responses": {
           "201": {
             "description": "Created",
@@ -1611,18 +1823,89 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missing": {
+                    "value": {
+                      "message": "content required"
+                    }
+                  },
+                  "tooLong": {
+                    "value": {
+                      "message": "comment exceeds 2000 characters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Missing token"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Account disabled"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Post not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "post not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "message": "Failed to add comment"
+                }
+              }
+            }
           }
-        }
-      },
-      "get": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "List comments",
+        },
         "security": [
           {
             "bearerAuth": []
           }
+        ],
+        "tags": [
+          "Posts"
         ],
         "parameters": [
           {
@@ -1633,60 +1916,56 @@
               "type": "integer"
             },
             "description": "Post ID"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
-            }
           }
         ],
-        "responses": {
-          "200": {
-            "description": "Comments",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Comment"
-                  }
-                }
+        "summary": "Comment on a post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentCreate"
+              },
+              "example": {
+                "content": "Team Phoenix has 3 open slots — DM me if you want in!"
               }
             }
           }
         }
+      },
+      "get": {
+        "description": "",
+        "responses": {
+          "default": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "tags": [
+          "Posts"
+        ]
       }
     },
     "/{postId}/comments/{commentId}": {
       "patch": {
-        "description": "PATCH /{postId}/comments/{commentId}",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "PATCH /{postId}/comments/{commentId}"
+        }
       },
       "delete": {
-        "description": "DELETE /{postId}/comments/{commentId}",
+        "description": "",
         "responses": {
           "default": {
             "description": ""
           }
-        },
-        "summary": "DELETE /{postId}/comments/{commentId}"
+        }
       }
     },
     "/media/presign": {
@@ -2470,7 +2749,7 @@
     "/users/{id}/followers": {
       "get": {
         "tags": [
-          "Profile"
+          "Users"
         ],
         "summary": "List followers",
         "security": [
@@ -2519,14 +2798,13 @@
           "400": {
             "description": "Invalid user id"
           }
-        },
-        "description": "List followers"
+        }
       }
     },
     "/users/{id}/following": {
       "get": {
         "tags": [
-          "Profile"
+          "Users"
         ],
         "summary": "List following",
         "security": [
@@ -2575,8 +2853,7 @@
           "400": {
             "description": "Invalid user id"
           }
-        },
-        "description": "List following"
+        }
       }
     },
     "/notifications": {
@@ -2584,10 +2861,29 @@
         "tags": [
           "Users"
         ],
-        "summary": "List notifications",
+        "summary": "List notifications for current user",
         "security": [
           {
             "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
           }
         ],
         "responses": {
@@ -2609,7 +2905,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "Mark notification read",
+        "summary": "Mark a notification as read",
         "security": [
           {
             "bearerAuth": []
@@ -2637,7 +2933,7 @@
             }
           },
           "404": {
-            "description": "Not found"
+            "description": "Notification not found"
           }
         }
       }
@@ -2647,7 +2943,7 @@
         "tags": [
           "Users"
         ],
-        "summary": "Mark all notifications read",
+        "summary": "Mark all notifications as read",
         "security": [
           {
             "bearerAuth": []
@@ -2663,600 +2959,6 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/users/{id}/posts": {
-      "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "List user posts (with pinned)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "User ID"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserPostsResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid user id"
-          },
-          "403": {
-            "description": "Private or blocked"
-          }
-        }
-      }
-    },
-    "/users/{id}/replies": {
-      "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "List replies authored by user",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "User ID"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserFeedResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid user id"
-          },
-          "403": {
-            "description": "Private or blocked"
-          }
-        }
-      }
-    },
-    "/users/{id}/media": {
-      "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "List user media posts",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "User ID"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserFeedResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid user id"
-          },
-          "403": {
-            "description": "Private or blocked"
-          }
-        }
-      }
-    },
-    "/users/{id}/likes": {
-      "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "List posts the user liked",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "User ID"
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Feed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserFeedResponse"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid user id"
-          },
-          "403": {
-            "description": "Private or blocked"
-          }
-        }
-      }
-    },
-    "/posts/{id}/repost": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Repost (silent share)",
-        "description": "Share an existing post without adding content or attachments.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "requestBody": {
-          "required": false,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RepostRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created repost",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Post"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "404": {
-            "description": "Quoted post not found"
-          }
-        }
-      }
-    },
-    "/posts/{id}/quote": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Quote post (repost with commentary/media)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuotePostCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created quote post",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Post"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "404": {
-            "description": "Quoted post not found"
-          }
-        }
-      }
-    },
-    "/posts/{id}/reply": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Reply to a post",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReplyPostCreate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created reply",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Post"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Validation error"
-          },
-          "404": {
-            "description": "Parent post not found"
-          }
-        }
-      }
-    },
-    "/posts/saved": {
-      "get": {
-        "tags": [
-          "Profile"
-        ],
-        "summary": "Saved/bookmarked posts of viewer",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "cursor",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 50
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Saved posts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserFeedResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/posts/{id}/save": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Save (bookmark) a post",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid id"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Unsave a post",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      }
-    },
-    "/posts/{id}/pin": {
-      "post": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Pin a post to profile",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid id"
-          },
-          "404": {
-            "description": "Not found"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Posts"
-        ],
-        "summary": "Unpin a post",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "Post ID"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Ok"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not found"
           }
         }
       }
@@ -3370,141 +3072,176 @@
       "UserSummary": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "integer",
-            "example": 42
-          },
-          "fullName": {
+          "type": {
             "type": "string",
-            "example": "Alice Doe"
+            "example": "object"
           },
-          "username": {
-            "type": "string",
-            "example": "alice"
-          },
-          "bio": {
-            "type": "string",
-            "example": "CS student and maker."
-          },
-          "avatarUrl": {
-            "type": "string",
-            "format": "uri",
-            "example": "/uploads/avatars/a-256.webp"
-          },
-          "avatarUrlFull": {
-            "type": "string",
-            "format": "uri",
-            "example": "/uploads/avatars/a-1024.webp"
-          },
-          "bannerUrl": {
-            "type": "string",
-            "format": "uri",
-            "nullable": true,
-            "example": "/uploads/banners/a.webp"
-          },
-          "website": {
-            "type": "string",
-            "nullable": true,
-            "example": "https://alice.dev"
-          },
-          "location": {
-            "type": "string",
-            "nullable": true,
-            "example": "Chennai"
-          },
-          "joinDate": {
-            "type": "string",
-            "format": "date",
-            "example": "2024-08-15"
-          },
-          "isVerified": {
-            "type": "boolean",
-            "example": true
-          },
-          "isPrivate": {
-            "type": "boolean",
-            "example": false
-          },
-          "isLimited": {
-            "type": "boolean",
-            "example": false
-          },
-          "followersCount": {
-            "type": "integer",
-            "example": 120
-          },
-          "followingCount": {
-            "type": "integer",
-            "example": 180
-          },
-          "postsCount": {
-            "type": "integer",
-            "example": 56
-          },
-          "likesCount": {
-            "type": "integer",
-            "example": 240
-          },
-          "bookmarksCount": {
-            "type": "integer",
-            "example": 35
-          },
-          "pinnedPostIds": {
-            "type": "array",
-            "items": {
-              "type": "integer"
-            },
-            "example": [
-              501,
-              499
-            ]
-          },
-          "viewerFollowing": {
-            "type": "boolean",
-            "example": true
-          },
-          "viewerFollowsBack": {
-            "type": "boolean",
-            "example": false
-          },
-          "viewerMuted": {
-            "type": "boolean",
-            "example": false
-          },
-          "viewerBlocked": {
-            "type": "boolean",
-            "example": false
-          },
-          "avatarInitial": {
-            "type": "string",
-            "example": "A"
-          }
-        },
-        "required": [
-          "id",
-          "username"
-        ]
-      },
-      "UserSelf": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/UserSummary"
-          },
-          {
+          "properties": {
             "type": "object",
             "properties": {
+              "id": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  }
+                }
+              },
+              "name": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "username": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  }
+                }
+              },
+              "email": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "string"
+                  },
+                  "format": {
+                    "type": "string",
+                    "example": "email"
+                  }
+                }
+              },
+              "degreeId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "departmentId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              },
+              "designationId": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "example": "integer"
+                  },
+                  "nullable": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          },
+          "example": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number",
+                "example": 42
+              },
+              "name": {
+                "type": "string",
+                "example": "Alice Doe"
+              },
+              "username": {
+                "type": "string",
+                "example": "alice"
+              },
               "email": {
                 "type": "string",
-                "format": "email",
                 "example": "alice@example.edu"
+              },
+              "degreeId": {
+                "type": "number",
+                "example": 101
+              },
+              "departmentId": {
+                "type": "number",
+                "example": 5
+              },
+              "designationId": {
+                "type": "number",
+                "example": 301
               }
-            },
-            "required": [
-              "email"
-            ]
+            }
           }
-        ],
-        "description": "Fields visible to the authenticated user about themselves."
+        }
+      },
+      "UserSelf": {
+        "type": "object",
+        "properties": {
+          "allOf": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "example": "object"
+                },
+                "properties": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "example": "string"
+                        },
+                        "format": {
+                          "type": "string",
+                          "example": "email"
+                        }
+                      }
+                    }
+                  }
+                },
+                "required": {
+                  "type": "array",
+                  "example": [
+                    "email"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "example": "Fields visible to the authenticated user about themselves."
+          }
+        }
       },
       "AuthRegisterRequest": {
         "type": "object",
@@ -4502,14 +4239,6 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
-          },
-          "viewerHasSaved": {
-            "type": "boolean",
-            "description": "Whether the requesting user has saved/bookmarked the post."
-          },
-          "viewerHasSeen": {
-            "type": "boolean",
-            "description": "False when this response is the user's first view within the TTL window; true otherwise."
           }
         },
         "required": [
@@ -5202,6 +4931,14 @@
             "type": "integer",
             "minimum": 1
           },
+          "prevPage": {
+            "type": "integer",
+            "nullable": true
+          },
+          "nextPage": {
+            "type": "integer",
+            "nullable": true
+          },
           "limit": {
             "type": "integer",
             "minimum": 1
@@ -5209,16 +4946,6 @@
           "count": {
             "type": "integer",
             "minimum": 0
-          },
-          "posts": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Post"
-            }
-          },
-          "prevPage": {
-            "type": "integer",
-            "nullable": true
           },
           "total": {
             "type": "integer",
@@ -5230,23 +4957,77 @@
           "remaining": {
             "type": "integer",
             "minimum": 0
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Post"
+            }
           }
         },
         "required": [
           "page",
           "limit",
           "count",
-          "posts",
-          "prevPage",
           "total",
           "hasMore",
-          "remaining"
+          "posts"
         ],
         "example": {
           "page": 1,
+          "prevPage": null,
+          "nextPage": 2,
           "limit": 10,
           "count": 2,
+          "total": 5,
+          "hasMore": true,
+          "remaining": 3,
           "posts": [
+            {
+              "id": 900,
+              "content": "Campus closed tomorrow due to maintenance.",
+              "postType": "announcement",
+              "pinnedUntil": "2026-03-01T12:00:00.000Z",
+              "audienceScope": {
+                "target": {
+                  "scope": "global"
+                },
+                "interests": [
+                  "announcement:general"
+                ]
+              },
+              "mentions": [],
+              "hashtags": [],
+              "urls": [],
+              "media": [],
+              "announcementTypeId": 2,
+              "announcementType": {
+                "id": 2,
+                "typeKey": "campus_notice",
+                "displayName": "Campus Notice",
+                "description": null
+              },
+              "userId": 1,
+              "user": {
+                "id": 1,
+                "fullName": "Admin",
+                "username": "admin",
+                "avatarUrl": null,
+                "avatarUrlFull": null,
+                "avatarInitial": "A"
+              },
+              "isArchived": false,
+              "likeCount": 0,
+              "commentCount": 0,
+              "quoteCount": 0,
+              "viewCount": 15,
+              "viewerHasSeen": false,
+              "viewerHasLiked": false,
+              "viewerHasSaved": false,
+              "viewerFollowsAuthor": false,
+              "createdAt": "2026-02-28T08:30:00.000Z",
+              "updatedAt": "2026-02-28T08:30:00.000Z"
+            },
             {
               "id": 123,
               "content": "Excited for the #Hackathon with @superadmin!",
@@ -5497,7 +5278,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 2000,
-            "description": "Trimmed text, max 2000 characters."
+            "description": "Trimmed text, max 2000 characters. Duplicate consecutive posts rejected."
           },
           "attachments": {
             "$ref": "#/components/schemas/PostAttachments"
@@ -5505,13 +5286,25 @@
         },
         "additionalProperties": false,
         "example": {
-          "content": "Campus meetup tomorrow?",
-          "attachments": []
+          "content": "Excited for the #Hackathon with @superadmin!",
+          "attachments": [
+            {
+              "type": "image",
+              "url": "https://cdn.example.edu/media/posts/hackathon-poster.webp",
+              "metadata": {
+                "r2Key": "users/4/posts/hackathon-poster.webp",
+                "contentType": "image/webp",
+                "size": 104857,
+                "width": 1024,
+                "height": 576
+              }
+            }
+          ]
         }
       },
       "RepostRequest": {
         "type": "object",
-        "description": "Silent repost; no content or attachments allowed.",
+        "description": "Silent repost; no content or attachments allowed. quotedPostId comes from the path parameter.",
         "additionalProperties": false
       },
       "QuotePostCreate": {
@@ -5528,7 +5321,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Quote post; content or attachments required. quotedPostId is taken from the path.",
+        "description": "Quote post; content or attachments required. quotedPostId is provided as a path parameter.",
         "example": {
           "content": "My take on this",
           "attachments": []
@@ -5550,7 +5343,7 @@
           }
         },
         "additionalProperties": false,
-        "description": "Reply to a post; parentPostId comes from the path.",
+        "description": "Reply to a post; parentPostId is provided as a path parameter.",
         "example": {
           "content": "Thanks for sharing!",
           "attachments": []
@@ -6066,67 +5859,6 @@
             "readAt": "2026-01-02T00:00:00.000Z"
           }
         }
-      },
-      "SimpleOk": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean"
-          }
-        },
-        "example": {
-          "ok": true
-        }
-      },
-      "UserFeedResponse": {
-        "type": "object",
-        "properties": {
-          "page": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "prevPage": {
-            "type": "integer",
-            "nullable": true
-          },
-          "nextPage": {
-            "type": "integer",
-            "nullable": true
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "count": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "total": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "hasMore": {
-            "type": "boolean"
-          },
-          "remaining": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "posts": {
-            "type": "array",
-            "items": {
-              "": "#/components/schemas/Post"
-            }
-          }
-        },
-        "required": [
-          "page",
-          "limit",
-          "count",
-          "total",
-          "hasMore",
-          "posts"
-        ]
       }
     }
   },

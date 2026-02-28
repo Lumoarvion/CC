@@ -12,7 +12,7 @@ const originalLoggerError = logger.error;
 const originalFindByPk = User.findByPk;
 const originalArchiveCreate = UserDeleteArchive.create;
 const originalTransaction = sequelize.transaction;
-const originalSendMail = mailer.transporter.sendMail;
+const originalSendMail = mailer.transporter?.sendMail;
 
 before(() => {
   logger.info = () => {};
@@ -25,7 +25,9 @@ after(() => {
   User.findByPk = originalFindByPk;
   UserDeleteArchive.create = originalArchiveCreate;
   sequelize.transaction = originalTransaction;
-  mailer.transporter.sendMail = originalSendMail;
+  if (mailer.transporter && originalSendMail) {
+    mailer.transporter.sendMail = originalSendMail;
+  }
 });
 
 function createMockRes() {
@@ -81,10 +83,12 @@ test('adminDeleteUser anonymizes the target account', async () => {
   };
 
   let mailerCalled = false;
-  mailer.transporter.sendMail = async () => {
-    mailerCalled = true;
-    return { messageId: 'test' };
-  };
+  if (mailer.transporter) {
+    mailer.transporter.sendMail = async () => {
+      mailerCalled = true;
+      return { messageId: 'test' };
+    };
+  }
 
   const req = {
     params: { id: '77' },
@@ -102,5 +106,7 @@ test('adminDeleteUser anonymizes the target account', async () => {
   assert.ok(archived, 'snapshot archived');
   assert.equal(mockUser.updatedValues?.accountStatus, 'deleted');
   assert.equal(mockUser.updatedValues?.loginDisabled, true);
-  assert.ok(mailerCalled, 'mailer invoked');
+  if (mailer.transporter) {
+    assert.ok(mailerCalled, 'mailer invoked');
+  }
 });

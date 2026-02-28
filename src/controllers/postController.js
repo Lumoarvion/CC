@@ -13,6 +13,7 @@ const MAX_POST_LENGTH = 2000;
 const MAX_POSTS_PER_MINUTE = 5;
 const FEED_DISCOVERY_MAX_AGE_HOURS = Number(process.env.FEED_DISCOVERY_MAX_AGE_HOURS || 72);
 const FEED_FETCH_CAP = 5000;
+const FEED_ANNOUNCEMENT_CAP = Number(process.env.FEED_ANNOUNCEMENT_CAP || 3);
 
 function isAdmin(user) {
   if (!user) return false;
@@ -190,6 +191,19 @@ function toPlainComment(commentInstance) {
     delete plain.Post;
   }
   return plain;
+}
+
+function splitSeenBuckets(posts) {
+  const unseen = [];
+  const seen = [];
+  for (const post of posts) {
+    if (post?.viewerHasSeen) {
+      seen.push(post);
+    } else {
+      unseen.push(post);
+    }
+  }
+  return { unseen, seen };
 }
 
 async function loadReferencedPost(postId, relationLabel = 'generic') {
@@ -539,10 +553,33 @@ export const feed = async (req, res) => {
       ['createdAt', 'DESC'],
       ['id', 'DESC'],
     ];
+    const announcementOrder = [
+      ['pinnedUntil', 'DESC'],
+      ['createdAt', 'DESC'],
+      ['id', 'DESC'],
+    ];
 
     const needed = offset + limit;
-    const followedWhere = { userId: { [Op.in]: feedActorIds }, isArchived: false };
     const queryStartedAt = Date.now();
+    const announcementWhere = {
+      postType: 'announcement',
+      isArchived: false,
+      pinnedUntil: { [Op.gte]: new Date() },
+    };
+    const announcementTotalRaw = await Post.count({ where: announcementWhere });
+    const announcementTotal = Math.min(announcementTotalRaw, FEED_ANNOUNCEMENT_CAP);
+    const announcementLimit = Math.min(Math.max(needed, limit), announcementTotal || 0, FEED_ANNOUNCEMENT_CAP);
+    const announcementRaw = announcementLimit
+      ? await Post.findAll({
+          where: announcementWhere,
+          include,
+          order: announcementOrder,
+          limit: announcementLimit,
+        })
+      : [];
+    const { posts: announcementPosts } = await serializePostsForViewer(announcementRaw, req.user.id);
+
+    const followedWhere = { postType: 'standard', userId: { [Op.in]: feedActorIds }, isArchived: false };
     const [followedTotal, followedPostsRaw] = await Promise.all([
       Post.count({ where: followedWhere }),
       Post.findAll({
@@ -553,19 +590,21 @@ export const feed = async (req, res) => {
       }),
     ]);
     const { posts: followedSerialized } = await serializePostsForViewer(followedPostsRaw, req.user.id);
-    const followedOrdered = orderBySeenFlag(followedSerialized);
+    const { unseen: followedUnseen, seen: followedSeen } = splitSeenBuckets(orderBySeenFlag(followedSerialized));
 
     // Discovery (unfollowed recent)
     const discoveryCutoff = new Date(Date.now() - FEED_DISCOVERY_MAX_AGE_HOURS * 3600 * 1000);
     const discoveryWhere = {
+      postType: 'standard',
       userId: { [Op.notIn]: feedActorIds },
       isArchived: false,
       createdAt: { [Op.gte]: discoveryCutoff },
     };
-    const needDiscovery = Math.max(0, offset + limit - followedTotal);
+    const needDiscovery = Math.max(0, offset + limit - announcementTotal - followedTotal);
     let discoveryTotal = 0;
-    let discoveryOrdered = [];
-    if (needDiscovery > 0 || offset >= followedTotal) {
+    let discoveryUnseen = [];
+    let discoverySeen = [];
+    if (needDiscovery > 0 || offset >= announcementTotal + followedTotal) {
       discoveryTotal = await Post.count({ where: discoveryWhere });
       const discoveryLimit = Math.min(Math.max(needDiscovery, limit), FEED_FETCH_CAP);
       const discoveryRaw = await Post.findAll({
@@ -575,13 +614,13 @@ export const feed = async (req, res) => {
         limit: discoveryLimit,
       });
       const { posts: discoverySerialized } = await serializePostsForViewer(discoveryRaw, req.user.id);
-      discoveryOrdered = orderBySeenFlag(discoverySerialized);
+      ({ unseen: discoveryUnseen, seen: discoverySeen } = splitSeenBuckets(orderBySeenFlag(discoverySerialized)));
     } else {
       discoveryTotal = await Post.count({ where: discoveryWhere });
     }
 
-    const combined = [...followedOrdered, ...discoveryOrdered];
-    const total = followedTotal + discoveryTotal;
+    const combined = [...announcementPosts, ...followedUnseen, ...discoveryUnseen, ...followedSeen, ...discoverySeen];
+    const total = announcementTotal + followedTotal + discoveryTotal;
     const pageItems = combined.slice(offset, offset + limit);
     const returnedCount = pageItems.length;
     const hasMore = offset + returnedCount < total;
@@ -600,6 +639,7 @@ export const feed = async (req, res) => {
       nextPage,
       prevPage,
       remaining,
+      announcementTotal,
       followedTotal,
       discoveryTotal,
     });

@@ -314,11 +314,12 @@ function addPostActions() {
     tags: ['Posts'],
     summary: 'Home feed',
     security: bearer,
+    description: 'Returns a single paginated home feed ordered as: active announcements first (capped), followed-users unseen posts, discovery unseen posts, followed-users seen posts, then discovery seen posts. Archived posts are excluded; discovery pulls from recent unfollowed standard posts.',
     parameters: [
       { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1 } },
       { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 50 } },
     ],
-    responses: { 200: { description: 'Feed', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserFeedResponse' } } } } },
+    responses: { 200: { description: 'Feed', content: { 'application/json': { schema: { $ref: '#/components/schemas/PostFeedResponse' } } } } },
   });
 
   setOp('/posts/saved', 'get', {
