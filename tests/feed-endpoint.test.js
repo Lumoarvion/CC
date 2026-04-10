@@ -2,7 +2,7 @@ import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { Op } from 'sequelize';
 import { feed } from '../src/controllers/postController.js';
-import { Post, Follow, Like, PostSave } from '../src/models/index.js';
+import { Post, Follow, Like, PostSave, UserBlock } from '../src/models/index.js';
 import { logger } from '../src/utils/logger.js';
 
 const originalFns = {
@@ -11,6 +11,7 @@ const originalFns = {
   followFindAll: Follow.findAll,
   likeFindAll: Like.findAll,
   postSaveFindAll: PostSave.findAll,
+  userBlockFindAll: UserBlock.findAll,
   loggerInfo: logger.info,
   loggerError: logger.error,
 };
@@ -20,6 +21,7 @@ beforeEach(() => {
   logger.error = () => {};
   Like.findAll = async () => [];
   PostSave.findAll = async () => [];
+  UserBlock.findAll = async () => [];
 });
 
 afterEach(() => {
@@ -28,6 +30,7 @@ afterEach(() => {
   Follow.findAll = originalFns.followFindAll;
   Like.findAll = originalFns.likeFindAll;
   PostSave.findAll = originalFns.postSaveFindAll;
+  UserBlock.findAll = originalFns.userBlockFindAll;
   logger.info = originalFns.loggerInfo;
   logger.error = originalFns.loggerError;
 });

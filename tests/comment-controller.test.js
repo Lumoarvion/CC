@@ -1,21 +1,24 @@
 import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { listComments, updateComment, deleteComment } from '../src/controllers/postController.js';
-import { Post, Comment } from '../src/models/index.js';
+import { Post, Comment, UserBlock } from '../src/models/index.js';
 import PostStats from '../src/models/PostStats.js';
 import { logger } from '../src/utils/logger.js';
 
 const originalLoggerInfo = logger.info;
 const originalLoggerError = logger.error;
+const originalUserBlockFindOne = UserBlock.findOne;
 
 before(() => {
   logger.info = () => {};
   logger.error = () => {};
+  UserBlock.findOne = async () => null;
 });
 
 after(() => {
   logger.info = originalLoggerInfo;
   logger.error = originalLoggerError;
+  UserBlock.findOne = originalUserBlockFindOne;
 });
 
 function createMockRes() {

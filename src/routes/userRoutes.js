@@ -1,6 +1,19 @@
 import { Router } from 'express';
 import { authRequired } from '../middleware/auth.js';
-import { me, getProfile, follow, unfollow, updateAvatar, deleteAvatar, listFollowers, listFollowing, updateProfile } from '../controllers/userController.js';
+import {
+  me,
+  getProfile,
+  follow,
+  unfollow,
+  updateAvatar,
+  deleteAvatar,
+  listFollowers,
+  listFollowing,
+  updateProfile,
+  blockUser,
+  unblockUser,
+  listBlockedUsers,
+} from '../controllers/userController.js';
 import { userPosts, userReplies, userMedia, userLikes } from '../controllers/postController.js';
 import { requestAccountDelete, confirmAccountDelete } from '../controllers/userDeleteController.js';
 import upload from '../utils/upload.js';
@@ -13,6 +26,7 @@ router.post('/me/avatar', authRequired, upload.single('avatar'), updateAvatar);
 router.delete('/me/avatar', authRequired, deleteAvatar);
 router.post('/me/delete-request', authRequired, requestAccountDelete);
 router.post('/me/delete-confirm', authRequired, confirmAccountDelete);
+router.get('/me/blocks', authRequired, listBlockedUsers);
 
 router.get('/:id/followers', authRequired, listFollowers);
 router.get('/:id/following', authRequired, listFollowing);
@@ -23,5 +37,7 @@ router.get('/:id/likes', authRequired, userLikes);
 router.get('/:id', authRequired, getProfile);
 router.post('/:id/follow', authRequired, follow);
 router.delete('/:id/follow', authRequired, unfollow);
+router.post('/:id/block', authRequired, blockUser);
+router.delete('/:id/block', authRequired, unblockUser);
 
 export default router;

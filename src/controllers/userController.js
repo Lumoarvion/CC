@@ -1,4 +1,4 @@
-import { User, Follow, Post, Like, PostSave } from '../models/index.js';
+import { User, Follow, Post, Like, PostSave, UserBlock } from '../models/index.js';
 import { Op } from 'sequelize';
 import fs from 'fs';
 import path from 'path';
@@ -6,8 +6,9 @@ import sharp from 'sharp';
 import { sequelize } from '../db.js';
 import { createNotification } from '../utils/notifications.js';
 import UserPin from '../models/UserPin.js';
+import { isBlockedEitherWay } from '../utils/blocks.js';
 
-async function buildProfilePayload(targetUser, viewerId, { includeEmail = false } = {}) {
+async function buildProfilePayload(targetUser, viewerId, { includeEmail = false, viewerBlocked = false } = {}) {
   if (!targetUser) return null;
   const base = targetUser.fullName || targetUser.username || targetUser.email || '';
   const avatarInitial = String(base).trim().charAt(0).toUpperCase();
@@ -62,7 +63,7 @@ async function buildProfilePayload(targetUser, viewerId, { includeEmail = false 
     viewerFollowing,
     viewerFollowsBack,
     viewerMuted: false,
-    viewerBlocked: false,
+    viewerBlocked: Boolean(viewerBlocked),
     avatarInitial,
   };
 
@@ -70,6 +71,10 @@ async function buildProfilePayload(targetUser, viewerId, { includeEmail = false 
     delete payload.email;
   }
   return payload;
+}
+
+async function isBlockedPair(viewerId, targetUserId) {
+  return isBlockedEitherWay(viewerId, targetUserId);
 }
 
 export const me = async (req, res) => {
@@ -121,7 +126,10 @@ export const getProfile = async (req, res) => {
     ]
   });
   if (!user) return res.status(404).json({ message: 'User not found' });
-  const payload = await buildProfilePayload(user, req.user?.id ?? null);
+  const viewerId = req.user?.id ?? null;
+  const blocked = viewerId ? await isBlockedPair(viewerId, user.id) : false;
+  if (blocked) return res.status(403).json({ message: 'User is blocked' });
+  const payload = await buildProfilePayload(user, viewerId, { viewerBlocked: blocked });
   return res.json(payload);
 };
 
@@ -228,6 +236,8 @@ export const follow = async (req, res) => {
 
   const target = await User.findByPk(followingId, { attributes: ['id'] });
   if (!target) return res.status(404).json({ message: 'User not found' });
+  const blocked = await isBlockedPair(req.user.id, followingId);
+  if (blocked) return res.status(403).json({ message: 'follow not allowed due to block settings' });
 
   let created = false;
   let restored = false;
@@ -291,6 +301,8 @@ export const listFollowers = async (req, res) => {
   }
   const targetUser = await User.findByPk(targetUserId, { attributes: ['id'] });
   if (!targetUser) return res.status(404).json({ message: 'User not found' });
+  const blocked = await isBlockedPair(req.user.id, targetUserId);
+  if (blocked) return res.status(403).json({ message: 'User is blocked' });
   const page = Math.max(parseInt(req.query.page || '1', 10), 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
   const offset = (page - 1) * limit;
@@ -345,6 +357,8 @@ export const listFollowing = async (req, res) => {
   }
   const targetUser = await User.findByPk(targetUserId, { attributes: ['id'] });
   if (!targetUser) return res.status(404).json({ message: 'User not found' });
+  const blocked = await isBlockedPair(req.user.id, targetUserId);
+  if (blocked) return res.status(403).json({ message: 'User is blocked' });
   const page = Math.max(parseInt(req.query.page || '1', 10), 1);
   const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
   const offset = (page - 1) * limit;
@@ -380,6 +394,120 @@ export const listFollowing = async (req, res) => {
     viewerFollows: viewerFollows.has(u.id),
     followsViewer: followsViewer.has(u.id),
   }));
+  const hasMore = offset + users.length < count;
+  return res.json({
+    page,
+    limit,
+    count: users.length,
+    total: count,
+    hasMore,
+    nextPage: hasMore ? page + 1 : null,
+    users,
+  });
+};
+
+export const blockUser = async (req, res) => {
+  const blockedUserId = Number(req.params.id);
+  if (!Number.isInteger(blockedUserId) || blockedUserId <= 0) {
+    return res.status(400).json({ message: 'invalid user id' });
+  }
+  if (blockedUserId === req.user.id) {
+    return res.status(400).json({ message: "You can't block yourself" });
+  }
+
+  const target = await User.findByPk(blockedUserId, { attributes: ['id'] });
+  if (!target) return res.status(404).json({ message: 'User not found' });
+
+  let created = false;
+  let restored = false;
+  await sequelize.transaction(async (t) => {
+    const existing = await UserBlock.findOne({
+      where: { blockerUserId: req.user.id, blockedUserId },
+      paranoid: false,
+      transaction: t,
+    });
+    if (existing && !existing.deletedAt) {
+      return;
+    }
+    if (existing && existing.deletedAt) {
+      await existing.restore({ transaction: t });
+      restored = true;
+    } else {
+      await UserBlock.create({ blockerUserId: req.user.id, blockedUserId }, { transaction: t });
+      created = true;
+    }
+
+    const [viewerFollowsTarget, targetFollowsViewer] = await Promise.all([
+      Follow.findOne({ where: { followerId: req.user.id, followingId: blockedUserId }, transaction: t }),
+      Follow.findOne({ where: { followerId: blockedUserId, followingId: req.user.id }, transaction: t }),
+    ]);
+
+    if (viewerFollowsTarget) {
+      await viewerFollowsTarget.destroy({ transaction: t });
+      await Promise.all([
+        User.update(
+          { followingCount: sequelize.literal('GREATEST(following_count - 1, 0)') },
+          { where: { id: req.user.id }, transaction: t }
+        ),
+        User.update(
+          { followersCount: sequelize.literal('GREATEST(followers_count - 1, 0)') },
+          { where: { id: blockedUserId }, transaction: t }
+        ),
+      ]);
+    }
+
+    if (targetFollowsViewer) {
+      await targetFollowsViewer.destroy({ transaction: t });
+      await Promise.all([
+        User.update(
+          { followingCount: sequelize.literal('GREATEST(following_count - 1, 0)') },
+          { where: { id: blockedUserId }, transaction: t }
+        ),
+        User.update(
+          { followersCount: sequelize.literal('GREATEST(followers_count - 1, 0)') },
+          { where: { id: req.user.id }, transaction: t }
+        ),
+      ]);
+    }
+  });
+
+  return res.json({ ok: true, alreadyBlocked: !(created || restored) });
+};
+
+export const unblockUser = async (req, res) => {
+  const blockedUserId = Number(req.params.id);
+  if (!Number.isInteger(blockedUserId) || blockedUserId <= 0) {
+    return res.status(400).json({ message: 'invalid user id' });
+  }
+  const removed = await UserBlock.destroy({ where: { blockerUserId: req.user.id, blockedUserId } });
+  return res.json({ ok: true, removed: Boolean(removed) });
+};
+
+export const listBlockedUsers = async (req, res) => {
+  const page = Math.max(parseInt(req.query.page || '1', 10), 1);
+  const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
+  const offset = (page - 1) * limit;
+
+  const { count, rows } = await UserBlock.findAndCountAll({
+    where: { blockerUserId: req.user.id },
+    include: [{ model: User, as: 'blocked', attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] }],
+    order: [['createdAt', 'DESC']],
+    offset,
+    limit,
+  });
+
+  const users = rows
+    .map((row) => row.blocked)
+    .filter(Boolean)
+    .map((u) => ({
+      id: u.id,
+      fullName: u.fullName,
+      username: u.username,
+      avatarUrl: u.avatarUrl,
+      avatarUrlFull: u.avatarUrlFull,
+      avatarInitial: (u.fullName || u.username || '').trim().charAt(0).toUpperCase() || null,
+    }));
+
   const hasMore = offset + users.length < count;
   return res.json({
     page,

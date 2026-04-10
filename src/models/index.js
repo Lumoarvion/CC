@@ -17,6 +17,8 @@ import PostStats from './PostStats.js';
 import PostSave from './PostSave.js';
 import Notification from './Notification.js';
 import UserPin from './UserPin.js';
+import Report from './Report.js';
+import UserBlock from './UserBlock.js';
 
 User.hasMany(Post, { foreignKey: { name: 'userId', allowNull: false }, onDelete: 'CASCADE' });
 Post.belongsTo(User, { foreignKey: { name: 'userId', allowNull: false } });
@@ -96,6 +98,16 @@ PostStats.belongsTo(Post, { foreignKey: { name: 'postId', allowNull: false }, on
 Notification.belongsTo(User, { as: 'recipient', foreignKey: { name: 'userId', allowNull: false }, onDelete: 'CASCADE' });
 Notification.belongsTo(User, { as: 'actor', foreignKey: { name: 'actorId', allowNull: false }, onDelete: 'CASCADE' });
 
+User.hasMany(Report, { as: 'submittedReports', foreignKey: { name: 'reporterUserId', allowNull: false }, onDelete: 'CASCADE' });
+Report.belongsTo(User, { as: 'reporter', foreignKey: { name: 'reporterUserId', allowNull: false }, onDelete: 'CASCADE' });
+User.hasMany(Report, { as: 'assignedReports', foreignKey: { name: 'assigneeUserId', allowNull: true }, onDelete: 'SET NULL' });
+Report.belongsTo(User, { as: 'assignee', foreignKey: { name: 'assigneeUserId', allowNull: true }, onDelete: 'SET NULL' });
+
+User.hasMany(UserBlock, { as: 'blocksInitiated', foreignKey: { name: 'blockerUserId', allowNull: false }, onDelete: 'CASCADE' });
+UserBlock.belongsTo(User, { as: 'blocker', foreignKey: { name: 'blockerUserId', allowNull: false }, onDelete: 'CASCADE' });
+User.hasMany(UserBlock, { as: 'blocksReceived', foreignKey: { name: 'blockedUserId', allowNull: false }, onDelete: 'CASCADE' });
+UserBlock.belongsTo(User, { as: 'blocked', foreignKey: { name: 'blockedUserId', allowNull: false }, onDelete: 'CASCADE' });
+
 // Role relations (required FK on User)
 Role.hasMany(User, { foreignKey: { name: 'roleId', allowNull: false }, onDelete: 'RESTRICT' });
 User.belongsTo(Role, { foreignKey: { name: 'roleId', allowNull: false } });
@@ -134,5 +146,7 @@ export {
   PostStats,
   PostSave,
   Notification,
-  UserPin
+  UserPin,
+  Report,
+  UserBlock
 };

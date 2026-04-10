@@ -1,5 +1,6 @@
 import Notification from '../models/Notification.js';
 import { logger } from './logger.js';
+import { isBlockedEitherWay } from './blocks.js';
 
 /**
  * Create a notification if actor and recipient differ.
@@ -9,6 +10,10 @@ export async function createNotification({ userId, actorId, type, entityType, en
     return null;
   }
   try {
+    const blocked = await isBlockedEitherWay(userId, actorId);
+    if (blocked) {
+      return null;
+    }
     const record = await Notification.create(
       {
         userId,

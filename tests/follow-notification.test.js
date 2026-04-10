@@ -2,7 +2,7 @@ import test, { beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { follow, unfollow, listFollowers, listFollowing } from '../src/controllers/userController.js';
 import { listNotifications, markAsRead, markAllAsRead } from '../src/controllers/notificationController.js';
-import { User, Follow } from '../src/models/index.js';
+import { User, Follow, UserBlock } from '../src/models/index.js';
 import Notification from '../src/models/Notification.js';
 import { sequelize } from '../src/db.js';
 
@@ -34,11 +34,13 @@ beforeEach(() => {
   originals.FollowFindOne = Follow.findOne;
   originals.FollowCreate = Follow.create;
   originals.FollowFindAndCountAll = Follow.findAndCountAll;
+  originals.UserBlockFindOne = UserBlock.findOne;
   originals.NotificationCreate = Notification.create;
   originals.NotificationFindAndCountAll = Notification.findAndCountAll;
   originals.NotificationFindOne = Notification.findOne;
   originals.NotificationUpdate = Notification.update;
   originals.SequelizeTransaction = sequelize.transaction;
+  UserBlock.findOne = async () => null;
 });
 
 afterEach(() => {
@@ -48,6 +50,7 @@ afterEach(() => {
   Follow.findOne = originals.FollowFindOne;
   Follow.create = originals.FollowCreate;
   Follow.findAndCountAll = originals.FollowFindAndCountAll;
+  UserBlock.findOne = originals.UserBlockFindOne;
   Notification.create = originals.NotificationCreate;
   Notification.findAndCountAll = originals.NotificationFindAndCountAll;
   Notification.findOne = originals.NotificationFindOne;

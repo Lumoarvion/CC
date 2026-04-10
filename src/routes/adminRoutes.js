@@ -11,6 +11,12 @@ import {
   restoreAnnouncement,
   deleteAnnouncement
 } from "../controllers/announcementController.js";
+import {
+  adminAssignReport,
+  adminGetReport,
+  adminListReports,
+  adminUpdateReportStatus,
+} from '../controllers/reportController.js';
 
 const router = Router();
 const requireAdminOrSuper = requireRoleKeys([0, 1]);
@@ -28,5 +34,9 @@ router.patch("/announcements/:id", authRequired, requireAdminOrSuper, updateAnno
 router.post("/announcements/:id/archive", authRequired, requireAdminOrSuper, archiveAnnouncement);
 router.post("/announcements/:id/restore", authRequired, requireAdminOrSuper, restoreAnnouncement);
 router.delete("/announcements/:id", authRequired, requireAdminOrSuper, deleteAnnouncement);
+router.get('/reports', authRequired, requireAdminOrSuper, adminListReports);
+router.get('/reports/:id', authRequired, requireAdminOrSuper, adminGetReport);
+router.patch('/reports/:id/status', authRequired, requireAdminOrSuper, adminUpdateReportStatus);
+router.post('/reports/:id/assign', authRequired, requireAdminOrSuper, adminAssignReport);
 
 export default router;

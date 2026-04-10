@@ -33,6 +33,7 @@ const doc = {
     { name: 'Posts', description: 'Posting, likes and comments' },
     { name: 'Admin', description: 'Super-admin only operations' },
     { name: 'Media', description: 'Media storage and uploads' },
+    { name: 'Reports', description: 'Content reporting and moderation queue' },
   ],
   components: {
     securitySchemes: {
@@ -412,7 +413,7 @@ autogen(outputFile, endpointsFiles, doc)
 
 
       const authKeys = new Set(['/register', '/login', '/request-otp', '/verify-otp', '/reference-data']);
-      const userKeys = new Set(['/me', '/{id}', '/{id}/follow', '/me/avatar', '/me/delete-request', '/me/delete-confirm']);
+      const userKeys = new Set(['/me', '/{id}', '/{id}/follow', '/{id}/block', '/me/blocks', '/me/avatar', '/me/delete-request', '/me/delete-confirm']);
       const postKeys = new Set(['/', '/feed', '/{id}/like', '/{id}/comments']);
       const mediaKeys = new Set(['/presign']);
 
@@ -1707,6 +1708,43 @@ autogen(outputFile, endpointsFiles, doc)
         required: ['page', 'limit', 'count', 'total', 'hasMore', 'users']
       };
 
+      spec.components.schemas.UserBlockActionResponse = {
+        type: 'object',
+        properties: {
+          ok: { type: 'boolean' },
+          alreadyBlocked: { type: 'boolean', nullable: true },
+          removed: { type: 'boolean', nullable: true }
+        },
+        example: { ok: true, alreadyBlocked: false, removed: true }
+      };
+
+      spec.components.schemas.UserBlockListResponse = {
+        type: 'object',
+        properties: {
+          page: { type: 'integer' },
+          limit: { type: 'integer' },
+          count: { type: 'integer' },
+          total: { type: 'integer' },
+          hasMore: { type: 'boolean' },
+          nextPage: { type: 'integer', nullable: true },
+          users: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'integer' },
+                fullName: { type: 'string' },
+                username: { type: 'string' },
+                avatarUrl: { type: 'string', nullable: true },
+                avatarUrlFull: { type: 'string', nullable: true },
+                avatarInitial: { type: 'string', nullable: true }
+              }
+            }
+          }
+        },
+        required: ['page', 'limit', 'count', 'total', 'hasMore', 'users']
+      };
+
       spec.components.schemas.NotificationItem = {
         type: 'object',
         properties: {
@@ -1774,6 +1812,46 @@ autogen(outputFile, endpointsFiles, doc)
           parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID to unfollow' }],
           responses: {
             200: { description: 'Unfollowed', content: { 'application/json': { schema: { $ref: '#/components/schemas/FollowActionResponse' } } } }
+          }
+        }
+      };
+
+      spec.paths['/users/{id}/block'] = {
+        post: {
+          tags: ['Users'],
+          summary: 'Block a user',
+          description: 'Blocks the target user, removes follow links in both directions, and prevents future interactions.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID to block' }],
+          responses: {
+            200: { description: 'Blocked', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserBlockActionResponse' } } } },
+            400: { description: 'Invalid request' },
+            404: { description: 'User not found' }
+          }
+        },
+        delete: {
+          tags: ['Users'],
+          summary: 'Unblock a user',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' }, description: 'User ID to unblock' }],
+          responses: {
+            200: { description: 'Unblocked', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserBlockActionResponse' } } } },
+            400: { description: 'Invalid request' }
+          }
+        }
+      };
+
+      spec.paths['/users/me/blocks'] = {
+        get: {
+          tags: ['Users'],
+          summary: 'List users blocked by current user',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'page', in: 'query', schema: { type: 'integer', minimum: 1 } },
+            { name: 'limit', in: 'query', schema: { type: 'integer', minimum: 1, maximum: 100 } }
+          ],
+          responses: {
+            200: { description: 'Blocked users', content: { 'application/json': { schema: { $ref: '#/components/schemas/UserBlockListResponse' } } } }
           }
         }
       };
@@ -1865,6 +1943,212 @@ autogen(outputFile, endpointsFiles, doc)
           ],
           responses: {
             200: { description: 'Announcements', content: { 'application/json': { schema: { $ref: '#/components/schemas/AnnouncementListResponse' } } } }
+          }
+        }
+      };
+
+      // Report schemas + endpoints
+      spec.components.schemas.ReportCreateRequest = {
+        type: 'object',
+        required: ['targetType', 'targetId', 'reasonCode'],
+        properties: {
+          targetType: { type: 'string', enum: ['post'], description: 'Target entity type. MVP supports posts only.' },
+          targetId: { type: 'integer', minimum: 1, description: 'Target entity ID.' },
+          reasonCode: { type: 'string', enum: ['spam', 'harassment', 'hate', 'nudity', 'violence', 'misinformation', 'other'] },
+          reasonText: { type: 'string', maxLength: 500, nullable: true, description: 'Optional additional context from reporter.' }
+        },
+        additionalProperties: false,
+        example: { targetType: 'post', targetId: 123, reasonCode: 'harassment', reasonText: 'Contains targeted abuse.' }
+      };
+
+      spec.components.schemas.Report = {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          reporterUserId: { type: 'integer' },
+          targetType: { type: 'string', enum: ['post'] },
+          targetId: { type: 'integer' },
+          reasonCode: { type: 'string', enum: ['spam', 'harassment', 'hate', 'nudity', 'violence', 'misinformation', 'other'] },
+          reasonText: { type: 'string', nullable: true },
+          status: { type: 'string', enum: ['open', 'under_review', 'resolved', 'dismissed'] },
+          priority: { type: 'string', enum: ['low', 'normal', 'high', 'critical'] },
+          assigneeUserId: { type: 'integer', nullable: true },
+          resolutionAction: { type: 'string', enum: ['none', 'archive_post'] },
+          resolutionNote: { type: 'string', nullable: true },
+          resolvedAt: { type: 'string', format: 'date-time', nullable: true },
+          resolvedBy: { type: 'integer', nullable: true },
+          target: {
+            type: 'object',
+            nullable: true,
+            description: 'Resolved target preview at fetch time.',
+            properties: {
+              id: { type: 'integer' },
+              content: { type: 'string' },
+              userId: { type: 'integer' },
+              isArchived: { type: 'boolean' },
+              createdAt: { type: 'string', format: 'date-time' }
+            }
+          },
+          createdAt: { type: 'string', format: 'date-time' },
+          updatedAt: { type: 'string', format: 'date-time' }
+        }
+      };
+
+      spec.components.schemas.ReportListResponse = {
+        type: 'object',
+        properties: {
+          page: { type: 'integer' },
+          limit: { type: 'integer' },
+          count: { type: 'integer' },
+          total: { type: 'integer' },
+          hasMore: { type: 'boolean' },
+          nextPage: { type: 'integer', nullable: true },
+          prevPage: { type: 'integer', nullable: true },
+          reports: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/Report' }
+          }
+        }
+      };
+
+      spec.components.schemas.AdminReportAssignRequest = {
+        type: 'object',
+        required: ['assigneeUserId'],
+        properties: {
+          assigneeUserId: { type: 'integer', minimum: 1, description: 'Admin/super-admin user ID to own this report.' }
+        },
+        additionalProperties: false
+      };
+
+      spec.components.schemas.AdminReportStatusUpdateRequest = {
+        type: 'object',
+        required: ['status'],
+        properties: {
+          status: { type: 'string', enum: ['open', 'under_review', 'resolved', 'dismissed'] },
+          resolutionAction: { type: 'string', enum: ['none', 'archive_post'], nullable: true },
+          resolutionNote: { type: 'string', maxLength: 1000, nullable: true },
+          archiveReason: { type: 'string', maxLength: 255, nullable: true, description: 'Used only when resolutionAction=archive_post.' }
+        },
+        additionalProperties: false
+      };
+
+      spec.paths['/reports'] = {
+        post: {
+          tags: ['Reports'],
+          summary: 'Submit a content report',
+          description: 'Creates a report against a target entity. Duplicate active reports from the same user on the same target are blocked.',
+          security: [{ bearerAuth: [] }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ReportCreateRequest' }
+              }
+            }
+          },
+          responses: {
+            201: { description: 'Report submitted', content: { 'application/json': { schema: { $ref: '#/components/schemas/Report' } } } },
+            400: { description: 'Validation error' },
+            404: { description: 'Target not found' },
+            409: { description: 'Duplicate active report exists' },
+            429: { description: 'Reporter rate-limited' }
+          }
+        }
+      };
+
+      spec.paths['/reports/me'] = {
+        get: {
+          tags: ['Reports'],
+          summary: 'List my submitted reports',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', enum: ['open', 'under_review', 'resolved', 'dismissed'] } },
+            { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1 } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } }
+          ],
+          responses: {
+            200: { description: 'Reporter queue', content: { 'application/json': { schema: { $ref: '#/components/schemas/ReportListResponse' } } } },
+            400: { description: 'Invalid filter' }
+          }
+        }
+      };
+
+      spec.paths['/admin/reports'] = {
+        get: {
+          tags: ['Admin'],
+          summary: 'List moderation reports',
+          description: 'Admin moderation queue with optional filtering.',
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'status', in: 'query', required: false, schema: { type: 'string', enum: ['open', 'under_review', 'resolved', 'dismissed'] } },
+            { name: 'reasonCode', in: 'query', required: false, schema: { type: 'string', enum: ['spam', 'harassment', 'hate', 'nudity', 'violence', 'misinformation', 'other'] } },
+            { name: 'targetType', in: 'query', required: false, schema: { type: 'string', enum: ['post'] } },
+            { name: 'page', in: 'query', required: false, schema: { type: 'integer', minimum: 1 } },
+            { name: 'limit', in: 'query', required: false, schema: { type: 'integer', minimum: 1, maximum: 100 } }
+          ],
+          responses: {
+            200: { description: 'Moderation queue', content: { 'application/json': { schema: { $ref: '#/components/schemas/ReportListResponse' } } } },
+            400: { description: 'Invalid filter' },
+            403: { description: 'Forbidden' }
+          }
+        }
+      };
+
+      spec.paths['/admin/reports/{id}'] = {
+        get: {
+          tags: ['Admin'],
+          summary: 'Get report detail',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+          responses: {
+            200: { description: 'Report detail', content: { 'application/json': { schema: { $ref: '#/components/schemas/Report' } } } },
+            400: { description: 'Invalid report id' },
+            404: { description: 'Report not found' }
+          }
+        }
+      };
+
+      spec.paths['/admin/reports/{id}/assign'] = {
+        post: {
+          tags: ['Admin'],
+          summary: 'Assign report to moderator',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/AdminReportAssignRequest' }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Assigned', content: { 'application/json': { schema: { $ref: '#/components/schemas/Report' } } } },
+            400: { description: 'Invalid assignee or payload' },
+            404: { description: 'Report/assignee not found' }
+          }
+        }
+      };
+
+      spec.paths['/admin/reports/{id}/status'] = {
+        patch: {
+          tags: ['Admin'],
+          summary: 'Update report status and resolution',
+          description: 'Updates moderation status. If `resolutionAction=archive_post`, the reported post is archived as part of this operation.',
+          security: [{ bearerAuth: [] }],
+          parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/AdminReportStatusUpdateRequest' }
+              }
+            }
+          },
+          responses: {
+            200: { description: 'Updated', content: { 'application/json': { schema: { $ref: '#/components/schemas/Report' } } } },
+            400: { description: 'Invalid input' },
+            404: { description: 'Report or target not found' }
           }
         }
       };

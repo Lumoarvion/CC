@@ -7,6 +7,7 @@ import { adjustPostStats, getPostStats, projectStats } from '../utils/postStats.
 import { trackViews } from '../utils/viewTracker.js';
 import { createNotification } from '../utils/notifications.js';
 import { orderBySeenFlag } from '../utils/feedOrder.js';
+import { isBlockedEitherWay, listBlockedSets } from '../utils/blocks.js';
 
 const ADMIN_ROLE_KEYS = new Set([0, 1]);
 const MAX_POST_LENGTH = 2000;
@@ -218,6 +219,10 @@ async function loadReferencedPost(postId, relationLabel = 'generic') {
   return post;
 }
 
+async function isBlockedWithPostOwner(viewerId, postOwnerId) {
+  return isBlockedEitherWay(viewerId, postOwnerId);
+}
+
 // Mode-aware wrappers let us expose separate endpoints while reusing core logic
 export const createStandardPost = (req, res) => {
   req._postMode = 'standard';
@@ -408,6 +413,10 @@ export const createPost = async (req, res) => {
       if (!quotedPost) {
         return res.status(404).json({ message: 'quoted post not found' });
       }
+      const blocked = await isBlockedWithPostOwner(req.user.id, quotedPost.userId);
+      if (blocked) {
+        return res.status(403).json({ message: 'quoted post not accessible due to block settings' });
+      }
     }
 
     if (parentPostId !== undefined && parentPostId !== null) {
@@ -419,6 +428,10 @@ export const createPost = async (req, res) => {
       parentPost = await loadReferencedPost(parsedId, 'parentPost');
       if (!parentPost) {
         return res.status(404).json({ message: 'parent post not found' });
+      }
+      const blocked = await isBlockedWithPostOwner(req.user.id, parentPost.userId);
+      if (blocked) {
+        return res.status(403).json({ message: 'parent post not accessible due to block settings' });
       }
     }
 
@@ -532,13 +545,18 @@ export const feed = async (req, res) => {
     const offset = (page - 1) * limit;
     logger.info('post.feed.request_received', { userId: req.user.id, page, limit, offset });
 
-    const following = await Follow.findAll({ where: { followerId: req.user.id }, attributes: ['followingId'] });
-    const followingIds = following.map((f) => f.followingId);
+    const [following, blockedSets] = await Promise.all([
+      Follow.findAll({ where: { followerId: req.user.id }, attributes: ['followingId'] }),
+      listBlockedSets(req.user.id),
+    ]);
+    const blockedIds = Array.from(blockedSets.excluded);
+    const followingIds = following.map((f) => f.followingId).filter((id) => !blockedSets.excluded.has(id));
     const feedActorIds = Array.from(new Set([req.user.id, ...followingIds]));
     logger.info('post.feed.following_resolved', {
       userId: req.user.id,
       followingCount: followingIds.length,
       uniqueActorCount: feedActorIds.length,
+      blockedCount: blockedIds.length,
     });
 
     const include = [
@@ -565,6 +583,7 @@ export const feed = async (req, res) => {
       postType: 'announcement',
       isArchived: false,
       pinnedUntil: { [Op.gte]: new Date() },
+      ...(blockedIds.length ? { userId: { [Op.notIn]: blockedIds } } : {}),
     };
     const announcementTotalRaw = await Post.count({ where: announcementWhere });
     const announcementTotal = Math.min(announcementTotalRaw, FEED_ANNOUNCEMENT_CAP);
@@ -594,9 +613,10 @@ export const feed = async (req, res) => {
 
     // Discovery (unfollowed recent)
     const discoveryCutoff = new Date(Date.now() - FEED_DISCOVERY_MAX_AGE_HOURS * 3600 * 1000);
+    const discoveryExcludedIds = Array.from(new Set([...feedActorIds, ...blockedIds]));
     const discoveryWhere = {
       postType: 'standard',
-      userId: { [Op.notIn]: feedActorIds },
+      userId: { [Op.notIn]: discoveryExcludedIds },
       isArchived: false,
       createdAt: { [Op.gte]: discoveryCutoff },
     };
@@ -764,6 +784,10 @@ async function loadTargetUser(targetUserId) {
 
 async function ensureProfileAccess(targetUser, viewerId) {
   if (!targetUser) return { status: 404, body: { message: 'User not found' } };
+  if (viewerId && viewerId !== targetUser.id) {
+    const blocked = await isBlockedEitherWay(viewerId, targetUser.id);
+    if (blocked) return { status: 403, body: { message: 'User is blocked' } };
+  }
   if (targetUser.isPrivate && targetUser.id !== viewerId) {
     const follows = await Follow.findOne({ where: { followerId: viewerId, followingId: targetUser.id } });
     if (!follows || follows.deletedAt) {
@@ -974,6 +998,10 @@ export const savePost = async (req, res) => {
       ownerId: post.userId,
       lookupDurationMs: Date.now() - lookupStartedAt,
     });
+    const blocked = await isBlockedWithPostOwner(req.user.id, post.userId);
+    if (blocked) {
+      return res.status(403).json({ message: 'save not allowed due to block settings' });
+    }
     const [save, created] = await PostSave.findOrCreate({ where: { userId: req.user.id, postId } });
     if (!created) {
       logger.info('post.save.duplicate', { userId: req.user.id, postId, saveId: save.id, durationMs: Date.now() - startedAt });
@@ -1017,13 +1045,18 @@ export const savedPosts = async (req, res) => {
     const offset = (page - 1) * limit;
     logger.info('post.saved.list.request_received', { userId: req.user.id, page, limit, offset });
 
+    const blockedSets = await listBlockedSets(req.user.id);
+    const blockedIds = Array.from(blockedSets.excluded);
     const { count: total, rows } = await PostSave.findAndCountAll({
       where: { userId: req.user.id },
       include: [
         {
           model: Post,
           required: true,
-          where: { isArchived: false },
+          where: {
+            isArchived: false,
+            ...(blockedIds.length ? { userId: { [Op.notIn]: blockedIds } } : {}),
+          },
           include: [
             { model: User, attributes: ['id', 'fullName', 'username', 'avatarUrl', 'avatarUrlFull'] },
             { model: AnnouncementType, as: 'announcementType', attributes: ['id', 'typeKey', 'displayName', 'description'] },
@@ -1112,6 +1145,10 @@ export const likePost = async (req, res) => {
       logger.info('post.like.not_found', { userId: req.user.id, postId });
       return res.status(404).json({ message: 'post not found' });
     }
+    const blocked = await isBlockedWithPostOwner(req.user.id, post.userId);
+    if (blocked) {
+      return res.status(403).json({ message: 'like not allowed due to block settings' });
+    }
     const [, created] = await Like.findOrCreate({ where: { userId: req.user.id, postId } });
     const stats = await adjustPostStats(postId, { likeDelta: created ? 1 : 0 });
     const projected = projectStats(stats);
@@ -1172,6 +1209,10 @@ export const comment = async (req, res) => {
       logger.info('post.comment.not_found', { userId: req.user.id, postId });
       return res.status(404).json({ message: 'post not found' });
     }
+    const blocked = await isBlockedWithPostOwner(req.user.id, post.userId);
+    if (blocked) {
+      return res.status(403).json({ message: 'comment not allowed due to block settings' });
+    }
     const sanitizedContent = sanitizeContentInput(req.body?.content);
     if (!sanitizedContent) {
       logger.info('post.comment.validation_failed', { userId: req.user.id, postId, reason: 'missing_content' });
@@ -1230,10 +1271,14 @@ export const listComments = async (req, res) => {
       return res.status(400).json({ message: 'invalid post id' });
     }
 
-    const post = await Post.findByPk(postId, { attributes: ['id'] });
+    const post = await Post.findByPk(postId, { attributes: ['id', 'userId'] });
     if (!post) {
       logger.info('post.comments.list.not_found', { userId: req.user.id, postId });
       return res.status(404).json({ message: 'post not found' });
+    }
+    const blocked = await isBlockedWithPostOwner(req.user.id, post.userId);
+    if (blocked) {
+      return res.status(403).json({ message: 'comments not accessible due to block settings' });
     }
 
     const where = { postId };

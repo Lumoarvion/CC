@@ -8,7 +8,7 @@ import {
   pinPost,
   unpinPost,
 } from '../src/controllers/postController.js';
-import { User, Post, Like, PostSave, UserPin, Follow } from '../src/models/index.js';
+import { User, Post, Like, PostSave, UserPin, Follow, UserBlock } from '../src/models/index.js';
 
 function createRes() {
   return {
@@ -39,6 +39,8 @@ beforeEach(() => {
   originals.UserPinFindOrCreate = UserPin.findOrCreate;
   originals.UserPinFindOne = UserPin.findOne;
   originals.LikeCount = Like.count;
+  originals.UserBlockFindOne = UserBlock.findOne;
+  UserBlock.findOne = async () => null;
 });
 
 afterEach(() => {
@@ -53,6 +55,7 @@ afterEach(() => {
   UserPin.findOrCreate = originals.UserPinFindOrCreate;
   UserPin.findOne = originals.UserPinFindOne;
   Like.count = originals.LikeCount;
+  UserBlock.findOne = originals.UserBlockFindOne;
 });
 
 test('userPosts returns pinned and regular posts separated', async () => {
